@@ -2,7 +2,7 @@
 
 🛟 **Need help or found a bug?** Get support at [support.doodesch.de/rejoin](https://support.doodesch.de/rejoin).
 
-Private distribution of the sealed V14 candidate. Adds the manual Rejoin menu card and an owned background session.
+Distribution of the sealed V14 test candidate. Adds the manual Rejoin menu card and an owned background session.
 
 The original gameplay source and current tests stay with the Rejoin owner in the Cabin workspace. This repository copies the sealed archive without repackaging it. It does not claim release acceptance. Normal Steam restart after a host crash is known to fail while the authority survives.
 
