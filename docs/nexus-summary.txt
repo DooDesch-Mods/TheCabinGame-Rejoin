@@ -1,1 +1,1 @@
-Game crashed? Return to your interrupted round through a new Rejoin card in the main menu. Keeps the round running when the host's game crashes. UE4SS included. Early development state; full four-player testing is still pending.
+Adds a Rejoin card to return to an interrupted round. Keeps the round running if the host's game crashes. UE4SS included. Early development state; full four-player testing is still pending.

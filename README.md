@@ -1,20 +1,20 @@
 # Rejoin
 
-🛟 **Need help or found a bug?** Get support at [support.doodesch.de/rejoin](https://support.doodesch.de/rejoin).
+> 🛟 **Need help or found a bug?** Get support at [support.doodesch.de/rejoin](https://support.doodesch.de/rejoin).
 
-**Early development state.** This is an early release. A full four-account group test and an actual AMD driver-crash test are still outstanding. Expect bugs and report them through the support link above.
+Adds a **Rejoin** card to the main menu when a previous session is available. Flip it and select **Reconnect** to return to your round.
 
-Rejoin adds a way to return to an interrupted round of **the cabin game**. A `Rejoin` card appears on the left of the main menu when a previous session is available. Turn it over and select `Reconnect` to return.
+The round keeps running if the host's game crashes. The host's main menu opens again, and guests can restart through Steam. Reconnecting restores your cards, turn and room changes. You choose whether to return.
 
-The host's session runs in a separate background process. If the host's game client closes unexpectedly, the session stays running and the main menu opens again. Reconnecting is your choice. Choosing `Quit Game` as the host intentionally ends the session.
+**Early development state.** Host crash and reconnect have been tested locally. A full four-player test and a real AMD driver-crash test are still pending. Bugs may occur.
 
 ## Requirements
 
 - Windows and the Steam version of the cabin game.
-- Supported Steam build: **25553694**, tested on 13 October 2026. The installer checks the executable and package indexes and stops for a different build.
+- Supported Steam build: **25553694**. The installer stops for a different game version.
 - Everyone in the group should install the same Rejoin version.
-- UE4SS **3.0.1 Beta**, commit `5e627997`, is included. No separate loader download is needed.
-- Internet access for the first installation. The installer downloads its asset tools and creates the menu files from your own installed game.
+- UE4SS is included. No separate loader download is needed.
+- Internet access for the first installation.
 
 ## Install or update
 
@@ -35,11 +35,9 @@ Unchanged previous Rejoin test versions can be updated. Replaced mod files are b
 
 The mod restores the retained player and round state. The camera and local viewing modes may return to the normal view. The menu card stays visible while the connection is being attempted.
 
-## Validation and known limits
+## Known limits
 
-Version **0.1.0** contains the tested V21 mod files. A local host-process crash followed by a manual reconnect passed, including three ordered handcards, card interaction state, the turn and 44 room components after placing the cellar. Both client and server acknowledged the restoration.
-
-**A complete test with four different Steam accounts has not yet been performed.** Guest leave/crash recovery in that group and recovery from an actual AMD driver crash remain unverified. This release does not prevent driver crashes.
+**A complete four-player test and recovery from a real AMD driver crash are still pending.** Rejoin does not prevent driver crashes.
 
 The background session lives on the host's PC. A PC shutdown or a crash of the background server loses the round. Full rounds are not saved to disk. The host's `Quit Game` also ends the round intentionally. Starting a new hosted session ends the host's old session.
 
