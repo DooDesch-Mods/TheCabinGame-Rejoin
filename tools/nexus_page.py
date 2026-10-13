@@ -41,6 +41,7 @@ def read_text():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--execute', action='store_true')
+    parser.add_argument('--replace-unpublished-text', action='store_true', help='Write newly authorized text when unpublished full text cannot be read; inspect the retained receipt before retry')
     args = parser.parse_args()
     uid = os.environ.get('NEXUS_MOD_ID', '')
     scoped = os.environ.get('NEXUS_GAME_SCOPED_ID', '')
@@ -63,7 +64,26 @@ def main():
             ack_path = ROOT / 'docs/nexus-page-ack.json'
             require(ack_path.is_file(), 'Unpublished page text unavailable and no retained PATCH acknowledgment; inspect before writing')
             ack = json.loads(ack_path.read_text(encoding='utf-8'))
-            require(ack.get('uid') == uid and ack.get('scoped') == scoped and ack.get('patch_acknowledged') is True and ack.get('description_sha256') == receipt['description_sha256'], 'Retained Nexus PATCH acknowledgment differs from this page/text')
+            require(ack.get('uid') == uid and ack.get('scoped') == scoped and ack.get('patch_acknowledged') is True, 'Retained Nexus PATCH acknowledgment differs from this page/text')
+            if ack.get('description_sha256') != receipt['description_sha256']:
+                require(args.replace_unpublished_text, 'Retained Nexus PATCH acknowledgment differs from this page/text')
+                receipt.update(description_readback_confirmed=False, text_readback_api='v1 unavailable', previous_description_sha256=ack.get('description_sha256'))
+                if not args.execute:
+                    print(json.dumps({'operation': 'Rejoin text preflight', 'write_attempted': False, 'description_readback_confirmed': False, 'change_pending': True}))
+                    return
+                receipt['attempted'] = True
+                output.write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
+                api('PATCH', '/mods/' + uid, {'summary': summary, 'description': description})
+                receipt['patch_acknowledged'] = True
+                after_text = read_text()
+                if after_text.get('text_available') is False:
+                    receipt['confirmed'] = True
+                    print('warn: new unpublished page text PATCH acknowledged; full text readback unavailable; inspect this receipt before retry')
+                else:
+                    require(canonical_text(after_text['summary']) == canonical_text(summary) and canonical_text(after_text['description']) == canonical_text(description), 'Nexus description/summary readback differs; inspect before retry')
+                    receipt.update(confirmed=True, description_readback_confirmed=True, text_readback_api='v1')
+                print(json.dumps({'operation': 'Rejoin authorized text replacement', 'patch_acknowledged': True, 'description_readback_confirmed': receipt['description_readback_confirmed']}))
+                return
             receipt.update(confirmed=True, patch_acknowledged=True, adopted_source_run=ack['source_run'], description_readback_confirmed=False, text_readback_api='v1 unavailable')
             print('warn: unpublished Nexus full text is unavailable; retained PATCH acknowledgment adopted for this exact description; no write replay')
             print(json.dumps({'operation': 'Rejoin page text acknowledgment', 'confirmed': True, 'description_readback_confirmed': False, 'parent_status': 'not_published'}))

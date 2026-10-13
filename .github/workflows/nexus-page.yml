@@ -1,0 +1,36 @@
+name: Update Rejoin Nexus description
+on:
+  workflow_dispatch:
+    inputs:
+      execute:
+        description: Write the authorized page text (inspect the last receipt before retry)
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: nexus-${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  page:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Test page update guards
+        run: python -m unittest discover -s tests -p test_nexus_page.py -v
+      - name: Update only the configured page text
+        env:
+          NEXUS_MOD_ID: ${{ vars.NEXUS_MOD_ID }}
+          NEXUS_GAME_SCOPED_ID: ${{ vars.NEXUS_GAME_SCOPED_ID }}
+          NEXUSMODS_API_KEY: ${{ secrets.NEXUSMODS_API_KEY }}
+        run: python tools/nexus_page.py --replace-unpublished-text ${{ inputs.execute && '--execute' || '' }}
+      - name: Retain text update receipt
+        if: always()
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: rejoin-page-receipt-${{ github.run_id }}
+          path: dist/nexus-page.json
+          if-no-files-found: warn

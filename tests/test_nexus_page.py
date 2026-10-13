@@ -94,5 +94,28 @@ class PageTests(unittest.TestCase):
                 page.main()
         self.assertEqual(calls.call_count, 2)
 
+    def test_authorized_new_unpublished_text_retains_ack_without_claiming_readback(self):
+        ack = {'uid': '45363444580354', 'scoped': '2', 'patch_acknowledged': True, 'description_sha256': 'previous-text'}
+        (self.root / 'docs/nexus-page-ack.json').write_text(json.dumps(ack), encoding='utf-8')
+        with patch.object(sys, 'argv', ['nexus_page.py', '--execute', '--replace-unpublished-text']), patch.object(page, 'read_text', return_value={'text_available': False}), patch.object(page, 'api', side_effect=[self.detail, self.parent, None]) as calls, contextlib.redirect_stdout(io.StringIO()):
+            page.main()
+        self.assertEqual(calls.call_args_list[2].args[:2], ('PATCH', '/mods/45363444580354'))
+        receipt = json.loads((self.root / 'dist/nexus-page.json').read_bytes())
+        self.assertTrue(receipt['patch_acknowledged'])
+        self.assertTrue(receipt['confirmed'])
+        self.assertFalse(receipt['description_readback_confirmed'])
+
+    def test_failed_new_unpublished_text_patch_remains_failed(self):
+        ack = {'uid': '45363444580354', 'scoped': '2', 'patch_acknowledged': True, 'description_sha256': 'previous-text'}
+        (self.root / 'docs/nexus-page-ack.json').write_text(json.dumps(ack), encoding='utf-8')
+        with patch.object(sys, 'argv', ['nexus_page.py', '--execute', '--replace-unpublished-text']), patch.object(page, 'read_text', return_value={'text_available': False}), patch.object(page, 'api', side_effect=[self.detail, self.parent, RuntimeError('retained HTTP failure')]):
+            with self.assertRaisesRegex(RuntimeError, 'retained HTTP failure'):
+                page.main()
+        receipt = json.loads((self.root / 'dist/nexus-page.json').read_bytes())
+        self.assertTrue(receipt['attempted'])
+        self.assertFalse(receipt['confirmed'])
+        self.assertNotIn('patch_acknowledged', receipt)
+        self.assertTrue(receipt['failure']['retry_requires_readback'])
+
 if __name__ == '__main__':
     unittest.main()

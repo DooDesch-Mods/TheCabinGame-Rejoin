@@ -1,1 +1,1 @@
-Early development state: adds a manual Rejoin card and keeps the host session in a background process after a client crash. Local reconnect tested; full four-account group testing remains outstanding. UE4SS included.
+Game crashed? Return to your interrupted round through a new Rejoin card in the main menu. Keeps the round running when the host's game crashes. UE4SS included. Early development state; full four-player testing is still pending.
