@@ -58,6 +58,7 @@ def main():
     output.parent.mkdir(exist_ok=True)
     receipt = {'identity': {'uid': uid, 'scoped': scoped}, 'attempted': False, 'confirmed': False,
                'parent_status_before': parent[0]['status'], 'description_sha256': hashlib.sha256(description.encode()).hexdigest()}
+    receipt['readback_text'] = {name: before_text.get(name) for name in ('summary', 'description')}
     try:
         if before_text.get('text_available') is False:
             require(parent[0]['status'] == 'not_published', 'Published Nexus page text is unavailable; cannot confirm it')
@@ -102,6 +103,7 @@ def main():
             after = api('GET', '/games/thecabingame/mods/2')
             require(str(after.get('id')) == uid and str(after.get('game_scoped_id')) == scoped, 'Nexus text readback identity differs')
             after_text = read_text()
+            receipt['readback_text'] = {name: after_text.get(name) for name in ('summary', 'description')}
             require(canonical_text(after_text['summary']) == canonical_text(summary) and canonical_text(after_text['description']) == canonical_text(description), 'Nexus description/summary readback differs; inspect before retry')
             receipt['confirmed'] = True
         receipt['text_readback_api'] = 'v1'
