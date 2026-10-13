@@ -1,10 +1,10 @@
 {
   "uid": "45363444580354",
   "scoped": "2",
-  "description_sha256": "fa6fd8453a4f73780940641a31173a29400d31039e5840dd2875295fbc863f77",
+  "description_sha256": "2bad973fc694e5ccb29dfb10debfebf402eb44d0fabc864aac0dbe6a75d07a18",
   "patch_acknowledged": true,
   "text_readback_confirmed": false,
-  "source_run": "38370006849",
-  "source_commit": "76be97324c4c90fa3cbcf422d88c9274df5baadf",
-  "evidence": "The player-facing description PATCH returned successfully. The subsequent v1 read returned no full text for the not_published page. This text-only workflow did not upload files or change the release tag. The retained nexus-page.json records attempted=true, patch_acknowledged=true and description_readback_confirmed=false."
+  "source_run": "38374337807",
+  "source_commit": "823b892e6c1c6ca73b5055a6f835adae25f8681a",
+  "evidence": "The normal manual-install description PATCH returned successfully in the 0.1.1 release workflow. The subsequent v1 read returned no full text for the not_published page. The retained nexus-page.json records attempted=true, patch_acknowledged=true and description_readback_confirmed=false. The separate release receipt confirms Main version45363444580398 and the UE4SS requirement."
 }
