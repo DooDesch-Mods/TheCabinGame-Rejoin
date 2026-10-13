@@ -27,7 +27,9 @@ def read_text():
         with urllib.request.urlopen(request, timeout=45) as response:
             body = json.loads(response.read())
         require(isinstance(body, dict) and str(body.get('mod_id')) == '2' and str(body.get('game_id')) == '10562', 'Nexus v1 text identity differs')
-        require(isinstance(body.get('summary'), str) and isinstance(body.get('description'), str), 'Nexus v1 full text is unavailable')
+        if not isinstance(body.get('summary'), str) or not isinstance(body.get('description'), str):
+            return {'text_available': False, 'cause': 'Nexus v1 reply omits the full summary/description', 'mod_id': body['mod_id'], 'game_id': body['game_id']}
+        body['text_available'] = True
         return body
     except urllib.error.HTTPError as error:
         raise RuntimeError(f'error: Nexus text GET /v1/games/thecabingame/mods/2.json HTTP {error.code}; original cause={str(error.reason).replace(key, "[redacted]")}') from error
@@ -56,6 +58,16 @@ def main():
     receipt = {'identity': {'uid': uid, 'scoped': scoped}, 'attempted': False, 'confirmed': False,
                'parent_status_before': parent[0]['status'], 'description_sha256': hashlib.sha256(description.encode()).hexdigest()}
     try:
+        if before_text.get('text_available') is False:
+            require(parent[0]['status'] == 'not_published', 'Published Nexus page text is unavailable; cannot confirm it')
+            ack_path = ROOT / 'docs/nexus-page-ack.json'
+            require(ack_path.is_file(), 'Unpublished page text unavailable and no retained PATCH acknowledgment; inspect before writing')
+            ack = json.loads(ack_path.read_text(encoding='utf-8'))
+            require(ack.get('uid') == uid and ack.get('scoped') == scoped and ack.get('patch_acknowledged') is True and ack.get('description_sha256') == receipt['description_sha256'], 'Retained Nexus PATCH acknowledgment differs from this page/text')
+            receipt.update(confirmed=True, patch_acknowledged=True, adopted_source_run=ack['source_run'], description_readback_confirmed=False, text_readback_api='v1 unavailable')
+            print('warn: unpublished Nexus full text is unavailable; retained PATCH acknowledgment adopted for this exact description; no write replay')
+            print(json.dumps({'operation': 'Rejoin page text acknowledgment', 'confirmed': True, 'description_readback_confirmed': False, 'parent_status': 'not_published'}))
+            return
         if not args.execute:
             print(json.dumps({'operation': 'Rejoin page text preflight', 'confirmed': True, 'parent_status': parent[0]['status'], 'write_attempted': False}))
             return
@@ -73,6 +85,7 @@ def main():
             require(canonical_text(after_text['summary']) == canonical_text(summary) and canonical_text(after_text['description']) == canonical_text(description), 'Nexus description/summary readback differs; inspect before retry')
             receipt['confirmed'] = True
         receipt['text_readback_api'] = 'v1'
+        receipt['description_readback_confirmed'] = True
         print(json.dumps({'operation': 'Rejoin page text', 'confirmed': True, 'early_development_state': True, 'parent_status': parent[0]['status']}))
     except Exception as error:
         receipt['failure'] = {'cause': str(error), 'retry_requires_readback': True}

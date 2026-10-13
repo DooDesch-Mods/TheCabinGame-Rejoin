@@ -73,5 +73,26 @@ class PageTests(unittest.TestCase):
         self.assertEqual(page.canonical_text('A &amp; B\r<br />Second line'), 'A & B\nSecond line')
         self.assertNotEqual(page.canonical_text('Early development state'), page.canonical_text('Stable release'))
 
+    def test_unpublished_missing_text_adopts_only_same_ack_without_patch(self):
+        import hashlib
+        description = '[b]Early development state.[/b] Four-account test remains outstanding.'
+        ack = {'uid': '45363444580354', 'scoped': '2', 'patch_acknowledged': True,
+               'description_sha256': hashlib.sha256(description.encode()).hexdigest(), 'source_run': 'retained-run'}
+        (self.root / 'docs/nexus-page-ack.json').write_text(json.dumps(ack), encoding='utf-8')
+        with patch.object(page, 'read_text', return_value={'text_available': False}), patch.object(page, 'api', side_effect=[self.detail, self.parent]) as calls, contextlib.redirect_stdout(io.StringIO()):
+            page.main()
+        self.assertEqual(calls.call_count, 2)
+        receipt = json.loads((self.root / 'dist/nexus-page.json').read_bytes())
+        self.assertTrue(receipt['patch_acknowledged'])
+        self.assertFalse(receipt['description_readback_confirmed'])
+
+    def test_missing_text_and_wrong_ack_never_writes(self):
+        ack = {'uid': '45363444580354', 'scoped': '2', 'patch_acknowledged': True, 'description_sha256': 'different'}
+        (self.root / 'docs/nexus-page-ack.json').write_text(json.dumps(ack), encoding='utf-8')
+        with patch.object(page, 'read_text', return_value={'text_available': False}), patch.object(page, 'api', side_effect=[self.detail, self.parent]) as calls:
+            with self.assertRaisesRegex(ValueError, 'acknowledgment differs'):
+                page.main()
+        self.assertEqual(calls.call_count, 2)
+
 if __name__ == '__main__':
     unittest.main()

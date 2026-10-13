@@ -1,0 +1,10 @@
+{
+  "uid": "45363444580354",
+  "scoped": "2",
+  "description_sha256": "47122b4d6bdb8fb24c4553dc021d6e9f201d46f58bfb0f0759b1fb993a0d0aae",
+  "patch_acknowledged": true,
+  "text_readback_confirmed": false,
+  "source_run": "38363829562",
+  "source_commit": "226e4cd4d59202ee622cd2e5fe4059a3665f1ea8",
+  "evidence": "The PATCH returned successfully before the failed v3 text-readback assertion. The subsequent v1 read returned no full text for the not_published page. No upload executed in either failed run."
+}
