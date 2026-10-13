@@ -1,10 +1,10 @@
 {
   "uid": "45363444580354",
   "scoped": "2",
-  "description_sha256": "47122b4d6bdb8fb24c4553dc021d6e9f201d46f58bfb0f0759b1fb993a0d0aae",
+  "description_sha256": "0e9b718c961d41541302b7f4c373d1258c54276f2274328447034585293be534",
   "patch_acknowledged": true,
   "text_readback_confirmed": false,
-  "source_run": "38363829562",
-  "source_commit": "226e4cd4d59202ee622cd2e5fe4059a3665f1ea8",
-  "evidence": "The PATCH returned successfully before the failed v3 text-readback assertion. The subsequent v1 read returned no full text for the not_published page. No upload executed in either failed run."
+  "source_run": "38367764851",
+  "source_commit": "89b4b8e17ddfbf5a58521b3144c4fc234b2fe5dd",
+  "evidence": "The player-facing description PATCH returned successfully. The subsequent v1 read returned no full text for the not_published page. This text-only workflow did not upload files or change the release tag. The retained nexus-page.json records attempted=true, patch_acknowledged=true and description_readback_confirmed=false."
 }
