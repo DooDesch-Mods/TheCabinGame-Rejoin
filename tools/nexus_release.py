@@ -185,15 +185,47 @@ def publish_github():
     write_output({"version": version, "asset": archive, "display_name": f"Rejoin {version}", "nexus_ready": str(nexus).lower(), "release_url": published["html_url"]})
     print(f"info: GitHub release tag, downloaded ZIP and checksum confirmed: {published['html_url']}")
 
+def resume_nexus():
+    require(os.environ.get("PUBLISH_NEXUS") == "true", "Nexus-only recovery requires publish_nexus=true")
+    archive = release_archive()
+    repository = os.environ["GITHUB_REPOSITORY"]
+    require(repository == REPOSITORY, "Rejoin GitHub repository differs")
+    version = package.CONFIG["version"]
+    tag = "v" + version
+    published = json.loads(run("gh", "api", f"repos/{repository}/releases/tags/{tag}"))
+    require(published.get("tag_name") == tag and published.get("draft") is False and published.get("prerelease") is False,
+            "Nexus recovery requires the exact existing public GitHub release")
+    tag_commit = json.loads(run("gh", "api", f"repos/{repository}/commits/{tag}"))["sha"]
+    require(bool(tag_commit), "Existing GitHub release tag commit is unconfirmed")
+    checksum = f"{hashlib.sha256(archive.read_bytes()).hexdigest()}  {archive.name}"
+    with tempfile.TemporaryDirectory() as folder:
+        run("gh", "release", "download", tag, "--repo", repository, "--pattern", archive.name,
+            "--pattern", "SHA256SUMS.txt", "--dir", folder)
+        downloaded = Path(folder) / archive.name
+        package.validate(downloaded)
+        require(hashlib.sha256(downloaded.read_bytes()).hexdigest() == hashlib.sha256(archive.read_bytes()).hexdigest(),
+                "Nexus recovery downloaded GitHub ZIP differs")
+        require((Path(folder) / "SHA256SUMS.txt").read_text().strip() == checksum, "Nexus recovery GitHub checksum differs")
+    receipt = preflight(archive, version)
+    receipt.update(nexus_only_recovery=True, github_release_tag=tag, github_release_tag_commit=tag_commit,
+                   github_release_url=published["html_url"], github_download_sha256_confirmed=True)
+    save(receipt)
+    (archive.parent / "SHA256SUMS.txt").write_text(checksum + "\n", encoding="utf-8")
+    write_output({"version": version, "asset": archive, "display_name": f"Rejoin {version}",
+                  "nexus_ready": "true", "release_url": published["html_url"]})
+    print(f"info: Nexus-only recovery confirmed existing GitHub tag={tag} commit={tag_commit}; ZIP/checksum exact; GitHub unchanged")
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("phase", choices=["preflight", "verify", "github"])
+    parser.add_argument("phase", choices=["preflight", "verify", "github", "nexus_only"])
     phase = parser.parse_args().phase
     if phase == "preflight":
         archive = release_archive()
         preflight(archive, package.CONFIG["version"])
     elif phase == "verify":
         verify()
+    elif phase == "nexus_only":
+        resume_nexus()
     else:
         publish_github()
 

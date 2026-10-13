@@ -30,7 +30,8 @@ class PageTests(unittest.TestCase):
             self.addCleanup(helper.stop)
 
     def run_page(self, api):
-        with patch.object(page, 'api', side_effect=api) as calls, contextlib.redirect_stdout(io.StringIO()):
+        detail = self.detail | {'summary': 'Early development state: manual Rejoin.', 'description': '[b]Early development state.[/b] Four-account test remains outstanding.'}
+        with patch.object(page, 'read_text', return_value=detail), patch.object(page, 'api', side_effect=api) as calls, contextlib.redirect_stdout(io.StringIO()):
             page.main()
         return calls
 
@@ -53,7 +54,7 @@ class PageTests(unittest.TestCase):
         self.assertTrue(json.loads((self.root / 'dist/nexus-page.json').read_bytes())['confirmed'])
 
     def test_patch_requires_exact_saved_text(self):
-        with patch.object(page, 'api', side_effect=[self.detail, self.parent, None, self.detail]):
+        with patch.object(page, 'read_text', side_effect=[self.detail, self.detail]), patch.object(page, 'api', side_effect=[self.detail, self.parent, None, self.detail]):
             with self.assertRaisesRegex(ValueError, 'readback differs'):
                 page.main()
         receipt = json.loads((self.root / 'dist/nexus-page.json').read_bytes())
@@ -63,9 +64,14 @@ class PageTests(unittest.TestCase):
 
     def test_exact_patch_readback_confirms_disclosure(self):
         detail = self.detail | {'summary': 'Early development state: manual Rejoin.', 'description': '[b]Early development state.[/b] Four-account test remains outstanding.'}
-        calls = self.run_page([self.detail, self.parent, None, detail])
+        with patch.object(page, 'read_text', side_effect=[self.detail, detail]), patch.object(page, 'api', side_effect=[self.detail, self.parent, None, self.detail]) as calls, contextlib.redirect_stdout(io.StringIO()):
+            page.main()
         self.assertEqual(calls.call_args_list[2].args[:2], ('PATCH', '/mods/45363444580354'))
         self.assertTrue(json.loads((self.root / 'dist/nexus-page.json').read_bytes())['confirmed'])
+
+    def test_legacy_breaks_and_entities_preserve_text(self):
+        self.assertEqual(page.canonical_text('A &amp; B\r<br />Second line'), 'A & B\nSecond line')
+        self.assertNotEqual(page.canonical_text('Early development state'), page.canonical_text('Stable release'))
 
 if __name__ == '__main__':
     unittest.main()

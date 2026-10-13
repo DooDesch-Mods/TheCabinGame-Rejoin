@@ -321,6 +321,10 @@ class NexusReleaseTests(unittest.TestCase):
         workflow = yaml.load((root / '.github/workflows/nexus-release.yml').read_text(), Loader=Loader)
         draft_workflow = yaml.load((root / '.github/workflows/nexus-draft.yml').read_text(), Loader=Loader)
         self.assertEqual(workflow['jobs']['release']['if'], "github.event_name == 'workflow_dispatch'")
+        self.assertEqual(workflow['on']['workflow_dispatch']['inputs']['resume_nexus']['default'], 'false')
+        target = next(step for step in workflow['jobs']['release']['steps'] if step.get('id') == 'target')
+        self.assertEqual(target['env']['RELEASE_PHASE'], "${{ inputs.resume_nexus && 'nexus_only' || 'github' }}")
+        self.assertEqual(target['run'], 'python tools/nexus_release.py "$RELEASE_PHASE"')
         self.assertNotIn('push', draft_workflow['on'])
         self.assertEqual(workflow['concurrency']['group'], draft_workflow['concurrency']['group'])
         self.assertEqual(workflow['jobs']['check']['strategy']['matrix']['os'], ['ubuntu-latest', 'windows-latest'])
@@ -403,6 +407,83 @@ class NexusReleaseTests(unittest.TestCase):
         (self.root / self.config['archive']).write_bytes(b'changed source')
         with patch.object(draft, 'ROOT', self.root), self.assertRaisesRegex(ValueError, 'public ZIP SHA256 differs'):
             draft.package_selection()
+
+    def recovery_command(self, *args):
+        self.recovery_calls.append(args)
+        if args[:3] == ('gh', 'release', 'download'):
+            folder = Path(args[args.index('--dir') + 1])
+            data = b'wrong bytes' if getattr(self, 'recovery_bad_zip', False) else self.archive.read_bytes()
+            (folder / self.archive.name).write_bytes(data)
+            checksum = 'wrong checksum' if getattr(self, 'recovery_bad_checksum', False) else self.sha() + '  ' + self.archive.name
+            (folder / 'SHA256SUMS.txt').write_text(checksum + '\n')
+            return ''
+        self.assertEqual(args[:2], ('gh', 'api'), 'Recovery must not create, move or upload a GitHub release/tag')
+        path = args[2]
+        if path.endswith('/releases/tags/v0.1.0'):
+            return json.dumps(getattr(self, 'recovery_public', {'tag_name': 'v0.1.0', 'draft': False, 'prerelease': False, 'html_url': 'https://example.test/existing'}))
+        if path.endswith('/commits/v0.1.0'):
+            return '{"sha":"old-payload-commit"}'
+        self.fail(str(args))
+
+    def test_nexus_recovery_new_ci_commit_preserves_existing_github_release(self):
+        self.recovery_calls = []
+        with patch.dict(os.environ, {'GITHUB_REPOSITORY': release.REPOSITORY, 'GITHUB_SHA': 'new-ci-only-commit', 'PUBLISH_NEXUS': 'true'}), patch.object(release, 'run', side_effect=self.recovery_command), patch.object(release, 'require_tag_target') as tag_guard, patch.object(release, 'write_output') as output:
+            release.resume_nexus()
+        tag_guard.assert_not_called()
+        receipt = json.loads(release.RECEIPT.read_text())
+        self.assertEqual(receipt['github_release_tag_commit'], 'old-payload-commit')
+        self.assertTrue(receipt['github_download_sha256_confirmed'] and receipt['nexus_only_recovery'])
+        self.assertFalse(receipt['group_accepted'])
+        self.assertEqual(receipt['sha256'], self.config['sha256'])
+        self.assertEqual(output.call_args.args[0]['nexus_ready'], 'true')
+        self.no_put()
+
+    def test_nexus_recovery_wrong_zip_or_checksum_blocks_before_nexus_preflight(self):
+        for field in ['recovery_bad_zip', 'recovery_bad_checksum']:
+            self.recovery_calls = []
+            setattr(self, field, True)
+            with self.subTest(field=field), patch.dict(os.environ, {'GITHUB_REPOSITORY': release.REPOSITORY, 'PUBLISH_NEXUS': 'true'}), patch.object(release, 'run', side_effect=self.recovery_command), patch.object(release, 'write_output') as output, self.assertRaisesRegex(ValueError, 'ZIP differs|checksum differs'):
+                release.resume_nexus()
+            output.assert_not_called()
+            self.assertFalse(release.RECEIPT.exists())
+            self.assertEqual(self.calls, [])
+            setattr(self, field, False)
+
+    def test_nexus_recovery_nonpublic_or_wrong_tag_blocks_before_download(self):
+        original = {'tag_name': 'v0.1.0', 'draft': False, 'prerelease': False, 'html_url': 'https://example.test/existing'}
+        for change in [{'tag_name': 'v0.2.0'}, {'draft': True}, {'prerelease': True}]:
+            self.recovery_calls = []
+            self.recovery_public = dict(original, **change)
+            with self.subTest(change=change), patch.dict(os.environ, {'GITHUB_REPOSITORY': release.REPOSITORY, 'PUBLISH_NEXUS': 'true'}), patch.object(release, 'run', side_effect=self.recovery_command), self.assertRaisesRegex(ValueError, 'existing public GitHub release'):
+                release.resume_nexus()
+            self.assertEqual(len(self.recovery_calls), 1)
+            self.assertEqual(self.calls, [])
+
+    def test_nexus_recovery_existing_version_or_receipt_is_not_replayed(self):
+        self.recovery_calls = []
+        self.versions[-1]['version'] = '0.1.0'
+        with patch.dict(os.environ, {'GITHUB_REPOSITORY': release.REPOSITORY, 'PUBLISH_NEXUS': 'true'}), patch.object(release, 'run', side_effect=self.recovery_command), patch.object(release, 'write_output') as output, self.assertRaisesRegex(ValueError, 'no automatic overwrite'):
+            release.resume_nexus()
+        self.assertFalse(release.RECEIPT.exists())
+        output.assert_not_called()
+        release.RECEIPT.write_text('previous failed receipt')
+        self.versions[-1]['version'] = 'old'
+        with patch.dict(os.environ, {'GITHUB_REPOSITORY': release.REPOSITORY, 'PUBLISH_NEXUS': 'true'}), patch.object(release, 'run', side_effect=self.recovery_command), self.assertRaisesRegex(ValueError, 'receipt already exists'):
+            release.resume_nexus()
+        self.assertEqual(release.RECEIPT.read_text(), 'previous failed receipt')
+        self.no_put()
+
+    def test_nexus_recovery_requires_explicit_nexus_upload(self):
+        with patch.object(release, 'run') as command, self.assertRaisesRegex(ValueError, 'requires publish_nexus=true'):
+            release.resume_nexus()
+        command.assert_not_called()
+        self.assertEqual(self.calls, [])
+
+    def test_nexus_recovery_cli_dispatch_is_separate_from_normal_release(self):
+        with patch.object(sys, 'argv', ['nexus_release.py', 'nexus_only']), patch.object(release, 'resume_nexus') as recovery, patch.object(release, 'publish_github') as normal:
+            release.main()
+        recovery.assert_called_once_with()
+        normal.assert_not_called()
 
 if __name__ == "__main__":
     unittest.main()

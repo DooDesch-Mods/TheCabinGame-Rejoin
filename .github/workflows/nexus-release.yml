@@ -9,6 +9,10 @@ on:
         description: Update the existing Nexus Main File (inspect Nexus before retry)
         type: boolean
         default: false
+      resume_nexus:
+        description: Resume Nexus from the existing exact GitHub release without changing its tag
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -42,15 +46,16 @@ jobs:
           python-version: '3.13'
       - name: Require local proof and disclosed release preparation
         run: python tools/package.py --release
-      - name: Publish or verify exact GitHub release
+      - name: Bind exact GitHub release or resume Nexus
         id: target
         env:
           GH_TOKEN: ${{ github.token }}
           PUBLISH_NEXUS: ${{ inputs.publish_nexus }}
+          RELEASE_PHASE: ${{ inputs.resume_nexus && 'nexus_only' || 'github' }}
           NEXUS_MOD_ID: ${{ vars.NEXUS_MOD_ID }}
           NEXUS_FILE_GROUP_ID: ${{ vars.NEXUS_FILE_GROUP_ID }}
           NEXUSMODS_API_KEY: ${{ secrets.NEXUSMODS_API_KEY }}
-        run: python tools/nexus_release.py github
+        run: python tools/nexus_release.py "$RELEASE_PHASE"
       - name: Update authorized early development Nexus text
         if: steps.target.outputs.nexus_ready == 'true'
         env:
