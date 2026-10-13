@@ -1,7 +1,7 @@
 {
   "mod": "CabinRejoin",
-  "version": "14",
+  "version": "0.1.0",
   "bundled_runtime": true,
-  "archive": "artifacts/CabinRejoin-V14-private-candidate.zip",
-  "sha256": "9e3e3c74e56f67f186504a7423a977992d0df14653edaac74a96ce949fc18ef4"
+  "archive": "artifacts/Rejoin-0.1.0.zip",
+  "sha256": "a5fc9552bc4cb140616d0b4f817ff4ea95ca46eb2b40a8e5a9e8de6f186a0f0b"
 }

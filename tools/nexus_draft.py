@@ -112,20 +112,43 @@ def write_output(values):
             require("\n" not in str(value), f"workflow output contains a newline: {name}")
             stream.write(f"{name}={value}\n")
 
+def package_selection():
+    config = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+    acceptance = json.loads((ROOT / "acceptance.json").read_text(encoding="utf-8"))
+    accepted = acceptance.get("accepted") is True and acceptance.get("sha256") == config["sha256"]
+    preparation_path = ROOT / "release-preparation.json"
+    preparation = json.loads(preparation_path.read_text(encoding="utf-8")) if preparation_path.is_file() else {}
+    prepared = (preparation.get("status") == "prepared" and preparation.get("publication_authorized") is True
+                and preparation.get("early_development_state") is True and preparation.get("sha256") == config["sha256"]
+                and preparation.get("version") == config["version"] and preparation.get("group_validation") == "not_measured")
+    if prepared:
+        source = ROOT / config["archive"]
+        require(hashlib.sha256(source.read_bytes()).hexdigest() == config["sha256"], "prepared public ZIP SHA256 differs")
+    return config, accepted, prepared
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("phase", choices=["preflight", "verify"])
+    parser.add_argument("phase", choices=["build", "preflight", "verify"])
     args = parser.parse_args()
+    if args.phase == "build":
+        import package
+        _, accepted, prepared = package_selection()
+        archive = package.build(release=accepted or prepared)
+        print("info: draft package validated and copied: " + str(archive))
+        return
     identity = {"uid": os.environ.get("NEXUS_MOD_ID", ""), "file": os.environ.get("NEXUS_FILE_GROUP_ID", ""), "scoped": os.environ.get("NEXUS_GAME_SCOPED_ID", "")}
     require(all(value.isdigit() for value in identity.values()), "Nexus IDs are missing or invalid")
     current_parent = parent(identity)
     if args.phase == "preflight":
-        config = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
-        accepted = json.loads((ROOT / "acceptance.json").read_text(encoding="utf-8")).get("accepted") is True
-        archive = ROOT / "dist" / f"{config['mod']}-{config['version']}{'' if accepted else '-candidate'}.zip"
+        config, accepted, prepared = package_selection()
+        release_ready = accepted or prepared
+        archive = ROOT / "dist" / f"{config['mod']}-{config['version']}{'' if release_ready else '-candidate'}.zip"
+        if release_ready:
+            import nexus_release
+            require(archive.resolve() == nexus_release.release_archive().resolve(), "prepared draft archive differs from validated public release")
         require(archive.is_file(), f"built archive is missing: {archive}")
         digest = hashlib.sha256(archive.read_bytes()).hexdigest()
-        version = f"{config['version']}-{'ready' if accepted else 'candidate'}.{digest[:12]}"
+        version = config['version'] if release_ready else f"{config['version']}-candidate.{digest[:12]}"
         versions = api("GET", f"/mod-files/{identity['file']}/versions")["versions"]
         active = [item for item in versions if item["category"] == "main"]
         require(bool(active), "configured Nexus file has no Main version")
@@ -136,13 +159,14 @@ def main():
         dlc = api("GET", f"/mod-file-versions/{previous['id']}/dependencies/dlc")["dlc_dependency_definitions"]
         require(not dlc, "unexpected DLC dependencies; draft update requires an explicit supported mapping")
         ready = previous["version"] != version
-        receipt = {"identity": identity, "archive": str(archive), "sha256": digest, "version": version, "previous_version_id": previous["id"], "dependencies": dependencies, "status": current_parent["status"], "accepted": accepted, "upload_required": ready, "bundled_runtime": bundled}
+        receipt = {"identity": identity, "archive": str(archive), "sha256": digest, "version": version, "previous_version_id": previous["id"], "dependencies": dependencies, "status": current_parent["status"], "accepted": accepted, "release_prepared": prepared, "upload_required": ready, "bundled_runtime": bundled}
         RECEIPT.write_text(json.dumps(receipt, indent=2), encoding="utf-8")
-        write_output({"ready": str(ready).lower(), "asset": archive, "version": version, "display_name": f"{config['mod']} {config['version']}{'' if accepted else ' candidate'}"})
+        write_output({"ready": str(ready).lower(), "asset": archive, "version": version, "display_name": f"Rejoin {config['version']}{'' if release_ready else ' candidate'}"})
         print(f"info: draft preflight confirmed mod={identity['uid']} file={identity['file']} status=not_published; upload_needed={ready}; sha256={digest}")
     else:
         receipt = json.loads(RECEIPT.read_text(encoding="utf-8"))
         require(receipt["identity"] == identity, "Nexus identity changed after preflight")
+        require(hashlib.sha256(Path(receipt["archive"]).read_bytes()).hexdigest() == receipt["sha256"], "Nexus ZIP changed after preflight")
         versions = api("GET", f"/mod-files/{identity['file']}/versions")["versions"]
         uploaded_id = os.environ.get("NEXUS_VERSION_ID")
         require(not receipt["upload_required"] or bool(uploaded_id), "Nexus upload returned no version acknowledgement; inspect Nexus before retry")

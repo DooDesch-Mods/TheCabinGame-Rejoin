@@ -1,0 +1,1 @@
+Early development state: adds a manual Rejoin card and keeps the host session in a background process after a client crash. Local reconnect tested; full four-account group testing remains outstanding. UE4SS included.

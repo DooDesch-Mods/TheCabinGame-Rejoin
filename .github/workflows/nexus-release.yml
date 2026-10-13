@@ -1,0 +1,96 @@
+name: Release Rejoin and update Nexus
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish_nexus:
+        description: Update the existing Nexus Main File (inspect Nexus before retry)
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: nexus-${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  check:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.13'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m unittest discover -s tests -v
+      - name: Validate sealed runtime and exact generated-asset guards
+        run: python tools/package.py
+  release:
+    if: github.event_name == 'workflow_dispatch'
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Require local proof and disclosed release preparation
+        run: python tools/package.py --release
+      - name: Publish or verify exact GitHub release
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISH_NEXUS: ${{ inputs.publish_nexus }}
+          NEXUS_MOD_ID: ${{ vars.NEXUS_MOD_ID }}
+          NEXUS_FILE_GROUP_ID: ${{ vars.NEXUS_FILE_GROUP_ID }}
+          NEXUSMODS_API_KEY: ${{ secrets.NEXUSMODS_API_KEY }}
+        run: python tools/nexus_release.py github
+      - name: Update authorized early development Nexus text
+        if: steps.target.outputs.nexus_ready == 'true'
+        env:
+          NEXUS_MOD_ID: ${{ vars.NEXUS_MOD_ID }}
+          NEXUS_GAME_SCOPED_ID: ${{ vars.NEXUS_GAME_SCOPED_ID }}
+          NEXUSMODS_API_KEY: ${{ secrets.NEXUSMODS_API_KEY }}
+        run: python tools/nexus_page.py --execute
+      - name: Upload prepared early development release to Nexus
+        id: nexus
+        if: steps.target.outputs.nexus_ready == 'true'
+        uses: Nexus-Mods/upload-action@c96019556046053aa26044b44396cd38929daf23
+        with:
+          api_key: ${{ secrets.NEXUSMODS_API_KEY }}
+          file_id: ${{ vars.NEXUS_FILE_GROUP_ID }}
+          mod_id: ${{ vars.NEXUS_MOD_ID }}
+          filename: ${{ steps.target.outputs.asset }}
+          version: ${{ steps.target.outputs.version }}
+          display_name: ${{ steps.target.outputs.display_name }}
+          description: Rejoin is in an early development state. A complete test with four different Steam accounts has not yet been performed.
+          category: main
+          allow_mod_manager_download: false
+          primary_mod_manager_download: false
+          show_requirements_pop_up: true
+          archive_existing_version: true
+          update_mod_version: true
+      - name: Verify acknowledged Nexus file and preserve requirements
+        if: steps.target.outputs.nexus_ready == 'true'
+        env:
+          NEXUS_VERSION_ID: ${{ steps.nexus.outputs.version_id }}
+          NEXUS_MOD_ID: ${{ vars.NEXUS_MOD_ID }}
+          NEXUS_FILE_GROUP_ID: ${{ vars.NEXUS_FILE_GROUP_ID }}
+          NEXUSMODS_API_KEY: ${{ secrets.NEXUSMODS_API_KEY }}
+        run: python tools/nexus_release.py verify
+      - name: Save release receipt and checksum
+        if: always()
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: rejoin-release-receipt-${{ github.run_id }}
+          path: |
+            dist/nexus-release.json
+            dist/nexus-page.json
+            dist/SHA256SUMS.txt
+          if-no-files-found: warn

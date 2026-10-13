@@ -1,0 +1,30 @@
+[size=6]Rejoin[/size]
+🛟 [b]Need help or found a bug?[/b] Get support at [url=https://support.doodesch.de/rejoin]support.doodesch.de/rejoin[/url].
+
+[b]Early development state.[/b] This is an early release. A full four-account group test and an actual AMD driver-crash test are still outstanding. Expect bugs and report them through the support link above.
+
+Return to an interrupted round of [b]the cabin game[/b] through a new [b]Rejoin[/b] card on the left of the main menu. Hover over the card and select [b]Reconnect[/b] when you want to continue.
+
+The host's session runs in a separate background process. If the host's game client closes unexpectedly, the session stays running and the main menu opens again. Reconnecting is your choice. The host's [b]Quit Game[/b] intentionally ends the session.
+
+[size=5]Install[/size]
+[list=1]
+[*] Close the game.
+[*] Extract the complete ZIP.
+[*] Run [b]Installieren.bat[/b].
+[*] Start the game normally through Steam.
+[/list]
+UE4SS is included. The installer uses your existing Steam game and creates no game copy. Keep the BAT with the other extracted files. The first installation needs internet access to download asset tools and generate the menu files from your own game. All players should use the same Rejoin version.
+
+[size=5]Supported build and test status[/size]
+Windows, Steam build [b]25553694[/b]. Includes UE4SS 3.0.1 Beta, commit 5e627997. A local host-client crash followed by manual reconnect passed, preserving the three ordered handcards, card interaction state, turn and 44 room components after placing the cellar. Both client and server acknowledged the restoration.
+
+[b]The full four-account group test and recovery from an actual AMD driver crash are still unverified.[/b] Rejoin does not prevent driver crashes. If the host's PC shuts down or the background server crashes, the round is lost. Full rounds are not saved to disk. Choosing a new hosted session ends the host's old session.
+
+Compatibility with other mods that replace the menu or change player/session handling has not been tested. The installer stops for unsupported game builds, conflicting files or links instead of overwriting them.
+
+[size=5]Uninstall and troubleshooting[/size]
+Follow the included README for uninstall steps. Keep shared UE4SS files if other mods use them. Relevant logs are [b]the_cabin_game/Binaries/Win64/ue4ss/UE4SS.log[/b] and [b]ue4ss/CabinRejoinAuthority/UE4SS.log[/b]. Check logs before sharing because they can contain local paths and Steam identifiers.
+
+[size=5]Credits[/size]
+Rejoin by [b]DooDesch[/b]. UE4SS by the UE4SS contributors, with its MIT license included. Rejoin's license is included in the download. No original game executables or asset containers are shipped.

@@ -6,19 +6,6 @@ on:
         description: Update the unpublished file after checking its current state
         type: boolean
         default: false
-  push:
-    branches: [main]
-    paths:
-      - 'Mods/**'
-      - 'Paks/**'
-      - 'artifacts/**'
-      - 'profile_templates/**'
-      - 'package.json'
-      - 'acceptance.json'
-      - 'README.md'
-      - 'LICENSE.md'
-      - 'CHANGELOG.md'
-      - 'tools/package.py'
 permissions:
   contents: read
 concurrency:
@@ -40,14 +27,16 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m unittest discover -s tests -v
       - name: Build current candidate or require game acceptance
-        run: |
-          python -c "import json,subprocess,sys; accepted=json.load(open('acceptance.json'))['accepted']; subprocess.run([sys.executable,'tools/package.py']+(['--release'] if accepted else []),check=True)"
+        run: python tools/nexus_draft.py build
+      - name: Update authorized early development page text
+        if: inputs.upload
+        run: python tools/nexus_page.py --execute
       - name: Guard unpublished parent and capture file requirements
         id: target
         run: python tools/nexus_draft.py preflight
       - name: Update the existing unpublished file
         id: nexus
-        if: steps.target.outputs.ready == 'true' && (github.event_name == 'push' || inputs.upload)
+        if: steps.target.outputs.ready == 'true' && inputs.upload
         uses: Nexus-Mods/upload-action@c96019556046053aa26044b44396cd38929daf23
         with:
           api_key: ${{ secrets.NEXUSMODS_API_KEY }}
@@ -56,7 +45,7 @@ jobs:
           filename: ${{ steps.target.outputs.asset }}
           version: ${{ steps.target.outputs.version }}
           display_name: ${{ steps.target.outputs.display_name }}
-          description: Prepared file for the unpublished mod page.
+          description: Rejoin is in an early development state. A complete test with four different Steam accounts has not yet been performed.
           category: main
           allow_mod_manager_download: false
           primary_mod_manager_download: false
@@ -64,7 +53,7 @@ jobs:
           archive_existing_version: true
           update_mod_version: false
       - name: Verify uploaded file and preserve file-to-file requirements
-        if: steps.target.outputs.ready == 'false' || github.event_name == 'push' || inputs.upload
+        if: steps.target.outputs.ready == 'false' || inputs.upload
         env:
           NEXUS_VERSION_ID: ${{ steps.nexus.outputs.version_id }}
         run: python tools/nexus_draft.py verify
@@ -73,5 +62,7 @@ jobs:
         uses: actions/upload-artifact@v6.0.0
         with:
           name: nexus-draft-receipt
-          path: dist/nexus-draft.json
+          path: |
+            dist/nexus-draft.json
+            dist/nexus-page.json
           if-no-files-found: warn
