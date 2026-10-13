@@ -1,10 +1,10 @@
 {
   "uid": "45363444580354",
   "scoped": "2",
-  "description_sha256": "0e9b718c961d41541302b7f4c373d1258c54276f2274328447034585293be534",
+  "description_sha256": "fa6fd8453a4f73780940641a31173a29400d31039e5840dd2875295fbc863f77",
   "patch_acknowledged": true,
   "text_readback_confirmed": false,
-  "source_run": "38367764851",
-  "source_commit": "89b4b8e17ddfbf5a58521b3144c4fc234b2fe5dd",
+  "source_run": "38370006849",
+  "source_commit": "76be97324c4c90fa3cbcf422d88c9274df5baadf",
   "evidence": "The player-facing description PATCH returned successfully. The subsequent v1 read returned no full text for the not_published page. This text-only workflow did not upload files or change the release tag. The retained nexus-page.json records attempted=true, patch_acknowledged=true and description_readback_confirmed=false."
 }
