@@ -1,10 +1,10 @@
 {
   "uid": "45363444580354",
   "scoped": "2",
-  "description_sha256": "2bad973fc694e5ccb29dfb10debfebf402eb44d0fabc864aac0dbe6a75d07a18",
+  "description_sha256": "1319e289279870b5c0d763d05480d0866d815ad5559901fdc133ed7c5fad6e4e",
   "patch_acknowledged": true,
-  "text_readback_confirmed": false,
-  "source_run": "38374337807",
-  "source_commit": "823b892e6c1c6ca73b5055a6f835adae25f8681a",
-  "evidence": "The normal manual-install description PATCH returned successfully in the 0.1.1 release workflow. The subsequent v1 read returned no full text for the not_published page. The retained nexus-page.json records attempted=true, patch_acknowledged=true and description_readback_confirmed=false. The separate release receipt confirms Main version45363444580398 and the UE4SS requirement."
+  "text_readback_confirmed": true,
+  "source_run": "38387359961",
+  "source_commit": "068663b7752a9a11758e2808575c9c5a3a203287",
+  "evidence": "The 0.1.2 description PATCH was acknowledged in run38386178280. A fresh v1 read in run38387359961 confirmed the exact summary and description after Nexus formatting normalization, including the Mod Settings note and early development disclosure. The parent is published; Main version45363444580402 and the preserved UE4SS requirement are confirmed. GitHub v0.1.2 remains pinned to382ef296601f31e2d2a58862093fabf25be8afa4 and unchanged ZIP0c9e4dd0073cde84c3ea80c16292e9eee5304dd4e653e2138215b1f3cb981fb7."
 }
