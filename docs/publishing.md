@@ -6,13 +6,15 @@ The release uses the exact sealed ZIP configured in `package.json`, not a rebuil
 
 `nexus-release.yml` tests on Windows and Linux for pushes and pull requests. Publishing runs only on `workflow_dispatch`. It validates the release, binds the tag to the workflow commit, publishes or reuses an exact GitHub release and downloads its ZIP/checksum for readback. Enable `publish_nexus` to update the existing Nexus Main File. A mismatched Nexus parent or file group blocks before GitHub release mutation. The repository is pinned to `DooDesch-Mods/TheCabinGame-Rejoin`.
 
+Use `resume_nexus=true` together with `publish_nexus=true` only when a retained failed run proves that its Nexus upload never executed. This route downloads and checks the existing GitHub release without changing its tag or files. It still rejects an already uploaded Nexus version. Inspect the failed step and saved receipts before resuming; a green GitHub release alone is not evidence that Nexus upload did not execute.
+
 ## Repository configuration
 
 | Variable or secret | Required binding |
 |---|---|
 | `vars.NEXUS_MOD_ID` | Unique Mod ID `45363444580354` |
 | `vars.NEXUS_FILE_GROUP_ID` | Existing API File ID `8139033` |
-| `vars.NEXUS_GAME_SCOPED_ID` | Page ID `2`, used by the manual unpublished draft workflow |
+| `vars.NEXUS_GAME_SCOPED_ID` | Page ID `2`, used by both description-update workflows |
 | `secrets.NEXUSMODS_API_KEY` | Existing organization secret; never print or commit its value |
 | `github.token` | Automatic workflow token with release-job `contents: write` permission |
 
@@ -23,6 +25,8 @@ Both workflows share one Nexus concurrency group. The draft workflow is manual o
 With `upload=true`, the manual draft workflow runs `tools/nexus_page.py --execute` before initial upload. With `upload=false`, it never mutates page text. Its build selects the public archive and plain SemVer when the exact hash/version-bound preparation declares publication authorization and early development; `accepted=false` remains unchanged. After staging `0.1.0` on an unpublished page, use `publish_nexus=false` for the first matching GitHub release. The release updater refuses a second Nexus upload of the same version; later file updates need a new SemVer.
 
 The release workflow also updates the configured Nexus description with the same helper, only when `publish_nexus=true` and the exact parent/file preflight succeeds. Both page-update paths use the existing organization key and scoped page variable; a GitHub-only release performs no Nexus page mutation.
+
+Description readback uses the v1 full-text endpoint; the v3 game-scoped endpoint returns identity only. For the unpublished first page, v1 omitted full text. `docs/nexus-page-ack.json` retains the successful PATCH acknowledgment from run `38363829562` for that exact page and description hash. The helper can adopt this acknowledgment only while the page is unpublished and the desired hash still matches. It reports that full text readback is unconfirmed and does not replay the write. A published page requires full text readback. This acknowledgment does not prove initial page publication.
 
 The acknowledged upload must be the exact new latest Main version with the configured file ID and declared version. Existing file-to-file dependency ranges are copied and read back. An empty list is permitted only because Rejoin bundles UE4SS. Nonempty requirements retain their exact range/file guards. DLC dependencies block pending a supported mapping. A failed requirements PUT is recorded before the request and is not blindly repeated. The receipt explicitly leaves remote Nexus ZIP SHA confirmation unmeasured; API version acknowledgement is not a remote byte-hash claim.
 
