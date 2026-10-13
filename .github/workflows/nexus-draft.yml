@@ -30,7 +30,7 @@ jobs:
         run: python tools/nexus_draft.py build
       - name: Update authorized early development page text
         if: inputs.upload
-        run: python tools/nexus_page.py --execute
+        run: python tools/nexus_page.py --execute --replace-unpublished-text
       - name: Guard unpublished parent and capture file requirements
         id: target
         run: python tools/nexus_draft.py preflight

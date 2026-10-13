@@ -133,7 +133,7 @@ class NexusReleaseTests(unittest.TestCase):
     def test_unbundled_runtime_still_requires_dependencies(self):
         self.dependencies["300"] = []
         self.config["bundled_runtime"] = False
-        with self.assertRaisesRegex(ValueError, "requirements are missing"):
+        with patch.object(release, "resolve_ue4ss", return_value={"version_id": release.UE4SS_VERSION_ID, "file_id": "800"}), self.assertRaisesRegex(ValueError, "requirements are missing"):
             release.preflight(self.archive, "0.1.0")
         self.assertFalse(release.RECEIPT.exists())
 
@@ -331,10 +331,10 @@ class NexusReleaseTests(unittest.TestCase):
         step = next(step for step in workflow['jobs']['release']['steps'] if step.get('id') == 'nexus')
         self.assertIn('early development state', step['with']['description'])
         self.assertEqual(step['with']['allow_mod_manager_download'], 'false')
-        page = next(step for step in workflow['jobs']['release']['steps'] if step.get('run') == 'python tools/nexus_page.py --execute')
+        page = next(step for step in workflow['jobs']['release']['steps'] if step.get('run') == 'python tools/nexus_page.py --execute --replace-unpublished-text')
         self.assertEqual(page['if'], "steps.target.outputs.nexus_ready == 'true'")
         self.assertIn('NEXUS_GAME_SCOPED_ID', page['env'])
-        draft_page = next(step for step in draft_workflow['jobs']['draft']['steps'] if step.get('run') == 'python tools/nexus_page.py --execute')
+        draft_page = next(step for step in draft_workflow['jobs']['draft']['steps'] if step.get('run') == 'python tools/nexus_page.py --execute --replace-unpublished-text')
         self.assertEqual(draft_page['if'], 'inputs.upload')
         for job in [workflow['jobs']['release'], draft_workflow['jobs']['draft']]:
             artifacts = next(step for step in job['steps'] if step.get('uses', '').startswith('actions/upload-artifact@'))
@@ -484,6 +484,198 @@ class NexusReleaseTests(unittest.TestCase):
             release.main()
         recovery.assert_called_once_with()
         normal.assert_not_called()
+
+class ManualRuntimeMigrationTests(unittest.TestCase):
+    sha = NexusReleaseTests.sha
+    write_preparation = NexusReleaseTests.write_preparation
+    no_put = NexusReleaseTests.no_put
+
+    def setUp(self):
+        NexusReleaseTests.setUp(self)
+        renamed = self.archive.with_name("CabinRejoin-0.1.1.zip")
+        self.archive.rename(renamed)
+        self.archive = renamed
+        with zipfile.ZipFile(self.archive, "w") as archive:
+            archive.writestr("README.md", "Rejoin is in an early development state.\nA full four-player test and a real AMD driver-crash test are still pending.\n")
+        self.config.update(version="0.1.1", sha256=self.sha(), bundled_runtime=False)
+        self.preparation.update(version="0.1.1", sha256=self.sha())
+        self.write_preparation()
+        os.environ.update(NEXUS_MOD_ID="45363444580354", NEXUS_FILE_GROUP_ID="8139033")
+        self.parent_uid = "45363444580354"
+        self.files = [{"id": "8139033"}]
+        self.versions = [{"id": release.LEGACY_BUNDLED_VERSION_ID, "file": {"id": "8139033"}, "category": "main", "position": "1", "version": "0.1.0"}]
+        self.dependencies = {release.LEGACY_BUNDLED_VERSION_ID: [], "301": []}
+        self.loader_details = {"id": "600", "game_scoped_id": "4", "game_id": "10562"}
+        self.loader_parent = {"id": "600", "game_id": "10562", "status": "published"}
+        self.loader_files = [{"id": "800"}]
+        self.loader_version = {"id": release.UE4SS_VERSION_ID, "file": {"id": "800"}, "category": "main",
+                               "version": "3.0.1", "name": "UE4SS V3.0.1 1164 G5e627997"}
+
+    def http(self, request, timeout):
+        method = request.get_method()
+        path = request.full_url.removeprefix(draft.BASE)
+        payload = json.loads(request.data) if request.data is not None else None
+        self.calls.append((method, path, payload))
+        if path == "/mods/batch":
+            row = self.loader_parent if payload == {"mod_ids": [self.loader_details["id"]]} else {"id": self.parent_uid, "game_id": self.game_id, "status": self.parent_status}
+            data = {"data": {"mods": [row]}}
+        elif path == "/games/thecabingame/mods/4":
+            data = {"data": self.loader_details}
+        elif path == f"/mod-file-versions/{release.UE4SS_VERSION_ID}":
+            data = {"data": self.loader_version}
+        elif path == f"/mods/{self.loader_details['id']}/files":
+            data = {"data": {"mod_files": self.loader_files}}
+        elif path == "/mods/45363444580354/files":
+            data = {"data": {"mod_files": self.files}}
+        elif path == "/mod-files/8139033/versions":
+            data = {"data": {"versions": self.versions}}
+        elif path.endswith("/dependencies/dlc"):
+            data = {"dlc_dependency_definitions": self.dlc.get(path.split("/")[2], [])}
+        elif path.endswith("/dependencies/ranges"):
+            version = path.split("/")[2]
+            if method == "PUT":
+                self.assertEqual(version, "301")
+                receipt = json.loads(release.RECEIPT.read_text())
+                self.assertEqual(payload, receipt["desired_dependencies"])
+                if not self.ignore_put:
+                    definitions = []
+                    for definition in payload["dependency_definitions"]:
+                        values = []
+                        for row in definition["ranges"]:
+                            file_id = "800" if row["min_version_id"] == release.UE4SS_VERSION_ID else "400"
+                            values.append({"target_mod_file": {"id": file_id},
+                                "min_version": {"id": row["min_version_id"], "file": {"id": file_id}},
+                                "max_version": {"id": row["max_version_id"], "file": {"id": file_id}} if row["max_version_id"] else None})
+                        definitions.append({"ranges": values})
+                    self.dependencies[version] = definitions
+                data = None
+            else:
+                data = {"dependency_definitions": self.dependencies[version]}
+        else:
+            self.fail(f"unexpected HTTP operation: {method} {path}")
+        response = MagicMock()
+        response.status = 204 if data is None else 200
+        response.headers = {"Content-Type": "application/json"}
+        response.read.return_value = b"" if data is None else json.dumps(data).encode()
+        response.__enter__.return_value = response
+        return response
+
+    def prepare(self):
+        return release.preflight(self.archive, "0.1.1")
+
+    def upload(self):
+        self.versions[0]["category"] = "archived"
+        self.versions.append({"id": "301", "file": {"id": "8139033"}, "category": "main", "position": "2", "version": "0.1.1"})
+
+    def test_exact_bundled_source_adds_separate_ue4ss_with_readback_once(self):
+        receipt = self.prepare()
+        self.assertEqual(receipt["source_dependencies"], {"dependency_definitions": []})
+        self.assertEqual(receipt["desired_dependencies"], {"dependency_definitions": [{"ranges": [{"min_version_id": release.UE4SS_VERSION_ID, "max_version_id": None}]}]})
+        self.assertTrue(receipt["legacy_bundled_migration"])
+        self.assertFalse(receipt["group_accepted"])
+        self.no_put()
+        self.upload()
+        confirmed = release.verify()
+        self.assertTrue(confirmed["requirements_confirmed"])
+        release.verify()
+        self.assertEqual(sum(method == "PUT" for method, _, _ in self.calls), 1)
+        self.assertEqual(self.dependencies[release.LEGACY_BUNDLED_VERSION_ID], [])
+
+    def test_published_legacy_source_can_migrate(self):
+        self.parent_status = "published"
+        self.prepare()
+        self.upload()
+        self.assertEqual(release.verify()["status"], "published")
+
+    def test_unrelated_empty_source_does_not_gain_an_exception(self):
+        self.versions[0]["id"] = "302"
+        self.dependencies["302"] = []
+        with self.assertRaisesRegex(ValueError, "requirements are missing"):
+            self.prepare()
+        self.assertFalse(release.RECEIPT.exists())
+        self.no_put()
+
+    def test_existing_nonempty_ranges_are_preserved_when_loader_is_added(self):
+        self.dependencies[release.LEGACY_BUNDLED_VERSION_ID] = [copy.deepcopy(self.definition)]
+        receipt = self.prepare()
+        self.assertEqual(receipt["source_dependencies"], {"dependency_definitions": [{"ranges": [{"min_version_id": "500", "max_version_id": "501"}]}]})
+        self.assertEqual(receipt["desired_dependencies"]["dependency_definitions"][0], receipt["source_dependencies"]["dependency_definitions"][0])
+        self.upload()
+        release.verify()
+        self.assertEqual(self.dependencies[release.LEGACY_BUNDLED_VERSION_ID], [self.definition])
+
+    def test_existing_loader_requirement_is_not_duplicated_or_rewritten(self):
+        loader_range = {"ranges": [{"target_mod_file": {"id": "800"}, "min_version": {"id": release.UE4SS_VERSION_ID, "file": {"id": "800"}}, "max_version": None}]}
+        self.dependencies[release.LEGACY_BUNDLED_VERSION_ID] = [copy.deepcopy(loader_range)]
+        receipt = self.prepare()
+        self.assertEqual(receipt["source_dependencies"], receipt["desired_dependencies"])
+        self.assertEqual(len(receipt["desired_dependencies"]["dependency_definitions"]), 1)
+        self.upload()
+        self.dependencies["301"] = [copy.deepcopy(loader_range)]
+        release.verify()
+        self.no_put()
+
+    def test_empty_migration_exception_is_not_reused_for_future_versions(self):
+        renamed = self.archive.with_name("CabinRejoin-0.1.2.zip")
+        self.archive.rename(renamed)
+        self.archive = renamed
+        self.config["version"] = self.preparation["version"] = "0.1.2"
+        self.write_preparation()
+        with self.assertRaisesRegex(ValueError, "requirements are missing"):
+            release.preflight(self.archive, "0.1.2")
+        self.no_put()
+
+    def test_changed_source_blocks_before_target_write(self):
+        self.prepare()
+        self.upload()
+        self.dependencies[release.LEGACY_BUNDLED_VERSION_ID] = [copy.deepcopy(self.definition)]
+        with self.assertRaisesRegex(ValueError, "previous requirements changed"):
+            release.verify()
+        self.no_put()
+
+    def test_loader_identity_build_category_and_file_guards(self):
+        checks = [("loader_details", "game_scoped_id", "3"), ("loader_details", "game_id", "1"),
+                  ("loader_parent", "status", "not_published"), ("loader_version", "category", "optional"),
+                  ("loader_version", "id", "999"), ("loader_version", "version", "3.0.2"),
+                  ("loader_version", "name", "UE4SS V3.0.1 wrong build"), ("loader_version", "file", {"id": "999"})]
+        for field, key, changed in checks:
+            original = copy.deepcopy(getattr(self, field))
+            getattr(self, field)[key] = changed
+            with self.subTest(field=field, key=key), self.assertRaises(ValueError):
+                self.prepare()
+            setattr(self, field, original)
+            self.assertFalse(release.RECEIPT.exists())
+        self.no_put()
+
+    def test_wrong_loader_target_readback_is_rejected(self):
+        self.prepare()
+        self.upload()
+        self.dependencies["301"] = [{"ranges": [{"target_mod_file": {"id": "999"}, "min_version": {"id": release.UE4SS_VERSION_ID, "file": {"id": "999"}}, "max_version": None}]}]
+        with self.assertRaisesRegex(ValueError, "UE4SS target file differs"):
+            release.verify()
+        self.no_put()
+
+    def test_failed_loader_write_is_not_replayed(self):
+        self.prepare()
+        self.upload()
+        self.ignore_put = True
+        with self.assertRaisesRegex(ValueError, "readback differs|requirements are missing"):
+            release.verify()
+        with self.assertRaisesRegex(ValueError, "already attempted"):
+            release.verify()
+        self.assertEqual(sum(method == "PUT" for method, _, _ in self.calls), 1)
+
+    def test_desired_ranges_cannot_drop_existing_requirements(self):
+        self.dependencies[release.LEGACY_BUNDLED_VERSION_ID] = [copy.deepcopy(self.definition)]
+        self.prepare()
+        self.upload()
+        receipt = json.loads(release.RECEIPT.read_text())
+        receipt["desired_dependencies"]["dependency_definitions"].pop(0)
+        receipt["dependencies"] = receipt["desired_dependencies"]
+        release.save(receipt)
+        with self.assertRaisesRegex(ValueError, "desired requirements differ"):
+            release.verify()
+        self.no_put()
 
 if __name__ == "__main__":
     unittest.main()

@@ -31,7 +31,7 @@ jobs:
           python-version: '3.13'
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m unittest discover -s tests -v
-      - name: Validate sealed runtime and exact generated-asset guards
+      - name: Validate normal mod archive and accepted overlay files
         run: python tools/package.py
   release:
     if: github.event_name == 'workflow_dispatch'
@@ -62,7 +62,7 @@ jobs:
           NEXUS_MOD_ID: ${{ vars.NEXUS_MOD_ID }}
           NEXUS_GAME_SCOPED_ID: ${{ vars.NEXUS_GAME_SCOPED_ID }}
           NEXUSMODS_API_KEY: ${{ secrets.NEXUSMODS_API_KEY }}
-        run: python tools/nexus_page.py --execute
+        run: python tools/nexus_page.py --execute --replace-unpublished-text
       - name: Upload prepared early development release to Nexus
         id: nexus
         if: steps.target.outputs.nexus_ready == 'true'

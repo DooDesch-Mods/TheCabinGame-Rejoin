@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1 - 2026-10-13
+
+- Use the same manual installation layout as the other Cabin mods.
+- Include the finished mod containers directly in the download.
+- Require the separate UE4SS download.
+- Remove the test installer, BAT, asset recipes and bundled loader from the release archive.
+- Keep the previously tested gameplay and mod container bytes unchanged.
+
 ## 0.1.0 - 2026-10-13
 
 First release, using the tested V21 mod files.

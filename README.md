@@ -11,21 +11,18 @@ The round keeps running if the host's game crashes. The host's main menu opens a
 ## Requirements
 
 - Windows and the Steam version of the cabin game.
-- Supported Steam build: **25553694**. The installer stops for a different game version.
+- Supported Steam build: **25553694**.
 - Everyone in the group should install the same Rejoin version.
-- UE4SS is included. No separate loader download is needed.
-- Internet access for the first installation.
+- [UE4SS for the cabin game](https://www.nexusmods.com/thecabingame/mods/4), installed separately. Supported baseline: `v3.0.1-1164-g5e627997`.
 
 ## Install or update
 
-1. Close the game.
-2. Extract the **complete ZIP** to a folder.
-3. Run `Installieren.bat` from that folder.
+1. Close the game and install [UE4SS for the cabin game](https://www.nexusmods.com/thecabingame/mods/4).
+2. Copy both `CabinRejoin` and `CabinNativeProbe` from the ZIP's `Mods` folder into `the_cabin_game/Binaries/Win64/ue4ss/Mods`.
+3. Copy the ZIP's `the_cabin_game/Content/Paks` files into the matching game folder. Keep each `.pak`, `.utoc` and `.ucas` set together, with the same subfolders.
 4. Start the game normally through Steam.
 
-The installer finds your Steam installation. It installs into the existing game and does not create a copy of the game. Keep the BAT with the other extracted files. Do not run it directly from inside the ZIP.
-
-Unchanged previous Rejoin test versions can be updated. Replaced mod files are backed up in `the_cabin_game/Binaries/Win64/CabinRejoin-install-backups/`. Conflicting files or links stop installation instead of being overwritten.
+Install the same Rejoin version on every player's PC. Both mod folders and both container sets are required.
 
 ## Reconnect
 
@@ -41,7 +38,7 @@ The mod restores the retained player and round state. The camera and local viewi
 
 The background session lives on the host's PC. A PC shutdown or a crash of the background server loses the round. Full rounds are not saved to disk. The host's `Quit Game` also ends the round intentionally. Starting a new hosted session ends the host's old session.
 
-Other mods that replace the main-menu cards or change player/session handling may conflict. Compatibility with such mods has not been tested. An existing modified UE4SS installation can be rejected by the installer; do not overwrite its files by hand.
+Other mods that replace the main-menu cards or change player/session handling may conflict. Compatibility with such mods has not been tested.
 
 ## Uninstall
 
@@ -54,12 +51,12 @@ If you installed UE4SS only for Rejoin and use no other UE4SS mods, you can also
 
 ## Troubleshooting
 
-For a missing-file error, extract the full ZIP and run the BAT from the extracted folder. For a build or file-conflict error, keep the full message and send it through the support link above.
+If Rejoin does not load, check that UE4SS is installed and that both mod folders and all six container files are in their matching game folders.
 
 For an in-game problem, include your Rejoin version, whether you hosted or joined, the action that failed and the visible result. Relevant logs are `the_cabin_game/Binaries/Win64/ue4ss/UE4SS.log` and `ue4ss/CabinRejoinAuthority/UE4SS.log`. Check logs before sharing them because they can contain local paths and Steam identifiers.
 
 ## Credits and license
 
-Rejoin by **DooDesch**. UE4SS by the [UE4SS contributors](https://github.com/UE4SS-RE/RE-UE4SS); its MIT license is included. Installation uses [retoc](https://github.com/trumank/retoc) to generate files from the user's own game.
+Rejoin by **DooDesch**. Uses [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS). Mod containers are built with [retoc](https://github.com/trumank/retoc).
 
-Rejoin's terms are in `LICENSE.md`. Third-party components retain their own licenses. No original game executables or game asset containers are included in the download.
+Rejoin's terms are in `LICENSE.md`. Third-party components retain their own licenses. The mod containers contain the modified menu and startup Blueprints; the game and UE4SS runtime are not included.
