@@ -8,6 +8,8 @@ The round keeps running if the host's game crashes. The host's main menu opens a
 
 **Early development state.** Host crash and reconnect have been tested locally. A full four-player test and a real AMD driver-crash test are still pending. Bugs may occur.
 
+Works with **Mod Settings**. Rejoin stays on the far left; the **Mods** card stays on the far right. Both cards keep their own actions.
+
 ## Requirements
 
 - Windows and the Steam version of the cabin game.
@@ -38,7 +40,7 @@ The mod restores the retained player and round state. The camera and local viewi
 
 The background session lives on the host's PC. A PC shutdown or a crash of the background server loses the round. Full rounds are not saved to disk. The host's `Quit Game` also ends the round intentionally. Starting a new hosted session ends the host's old session.
 
-Other mods that replace the main-menu cards or change player/session handling may conflict. Compatibility with such mods has not been tested.
+Other mods that replace the main-menu cards or change player/session handling may conflict. Compatibility with mods other than Mod Settings has not been tested.
 
 ## Uninstall
 

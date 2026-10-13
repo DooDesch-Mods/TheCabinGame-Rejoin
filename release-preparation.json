@@ -1,13 +1,12 @@
 {
   "status": "prepared",
-  "version": "0.1.1",
-  "sha256": "59975ce43cf6d91b90975fafef45af7af0d8c1abb8f229e9fb5bcfd01b1faa40",
-  "supported_steam_build": "25553694",
-  "runtime_validation": "unchanged_local_host_client_crash_and_manual_rejoin",
-  "group_validation": "not_measured",
+  "version": "0.1.2",
+  "sha256": "0c9e4dd0073cde84c3ea80c16292e9eee5304dd4e653e2138215b1f3cb981fb7",
   "publication_authorized": true,
-  "known_limits_disclosed_in_README": true,
   "early_development_state": true,
-  "manual_copy_targets_matched": 69,
-  "runtime_changes": 0
+  "group_validation": "not_measured",
+  "manual_copy_targets_matched": 71,
+  "runtime_changes": 3,
+  "runtime_validation": "local_menu_compatibility",
+  "menu_compatibility_receipt_sha256": "b6c4981bc73ed6ff8c8f998b55b2508e6a344b64848e46a065a4c5f574abd302"
 }

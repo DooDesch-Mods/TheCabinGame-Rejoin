@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2 - 2026-10-13
+
+- Use Rejoin and Mod Settings together without overlapping menu cards.
+- Keep Rejoin on the left and Mods on the right.
+- Return each card to its front when moving the pointer between them.
+- Keep the same manual installation and separate UE4SS requirement.
+
 ## 0.1.1 - 2026-10-13
 
 - Use the same manual installation layout as the other Cabin mods.

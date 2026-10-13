@@ -1,9 +1,9 @@
 {
   "mod": "CabinRejoin",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "bundled_runtime": false,
-  "archive": "artifacts/Rejoin-0.1.1.zip",
-  "sha256": "59975ce43cf6d91b90975fafef45af7af0d8c1abb8f229e9fb5bcfd01b1faa40",
+  "archive": "artifacts/Rejoin-0.1.2.zip",
+  "sha256": "0c9e4dd0073cde84c3ea80c16292e9eee5304dd4e653e2138215b1f3cb981fb7",
   "ue4ss": "v3.0.1-1164-g5e627997",
   "installation": "manual"
 }
