@@ -73,6 +73,34 @@ class PageTests(unittest.TestCase):
         self.assertEqual(page.canonical_text('A &amp; B\r<br />Second line'), 'A & B\nSecond line')
         self.assertNotEqual(page.canonical_text('Early development state'), page.canonical_text('Stable release'))
 
+    def test_nexus_newline_and_break_pair_preserves_paragraph_count(self):
+        expected = 'First line\n\nSecond paragraph\nThird line'
+        observed = 'First line\n<br />\n<br />Second paragraph\n<br />Third line'
+        self.assertEqual(page.canonical_text(observed), expected)
+        self.assertNotEqual(page.canonical_text('First line\n<br />Second paragraph'), page.canonical_text('First line\n\nSecond paragraph'))
+
+    def test_nexus_list_closers_and_item_space_preserve_exact_item_text(self):
+        expected = '[list=1]\n[*] Close the game.\n[*] Copy both folders.\n[/list]'
+        observed = '[list=1]\n<br />[*]Close the game.[/*]\n<br />[*]Copy both folders.[/*]\n<br />[/list]'
+        self.assertEqual(page.canonical_text(observed), page.canonical_text(expected))
+        self.assertNotEqual(page.canonical_text(observed.replace('both folders', 'one folder')), page.canonical_text(expected))
+
+    def test_old_description_without_mod_settings_note_remains_mismatch(self):
+        old = '[b]Early development state.[/b]\n<br />\n<br />[list=1]\n<br />[*]Close the game.[/*]\n<br />[/list]'
+        current = '[b]Early development state.[/b]\n\nWorks with [b]Mod Settings[/b]. Rejoin stays on the far left; Mods stays on the far right.\n\n[list=1]\n[*] Close the game.\n[/list]'
+        self.assertNotEqual(page.canonical_text(old), page.canonical_text(current))
+
+    def test_patch_readback_accepts_only_nexus_format_changes(self):
+        description = '[b]Early development state.[/b]\n\nWorks with [b]Mod Settings[/b].\n\n[list=1]\n[*] Close the game.\n[*] Copy both folders.\n[/list]'
+        (self.root / 'docs/nexus-description.bbcode').write_text(description, encoding='utf-8')
+        normalized = description.replace('[*] ', '[*]').replace('Close the game.', 'Close the game.[/*]').replace('Copy both folders.', 'Copy both folders.[/*]').replace('\n', '\n<br />')
+        detail = self.detail | {'summary': 'Early development state: manual Rejoin.', 'description': normalized}
+        with patch.object(page, 'read_text', side_effect=[self.detail, detail]), patch.object(page, 'api', side_effect=[self.detail, self.parent, None, self.detail]) as calls, contextlib.redirect_stdout(io.StringIO()):
+            page.main()
+        self.assertEqual(calls.call_args_list[2].args[:2], ('PATCH', '/mods/45363444580354'))
+        receipt = json.loads((self.root / 'dist/nexus-page.json').read_bytes())
+        self.assertTrue(receipt['confirmed'] and receipt['description_readback_confirmed'])
+
     def test_unpublished_missing_text_adopts_only_same_ack_without_patch(self):
         import hashlib
         description = '[b]Early development state.[/b] Four-account test remains outstanding.'

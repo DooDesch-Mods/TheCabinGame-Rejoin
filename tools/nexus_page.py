@@ -6,6 +6,7 @@ import html
 import json
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 from nexus_draft import api, require
@@ -15,21 +16,24 @@ ROOT = Path(__file__).resolve().parents[1]
 def canonical_text(value):
     require(isinstance(value, str), 'Nexus text field is missing or not a string')
     value = html.unescape(value).replace('\r\n', '\n')
-    value = re.sub(r'\r?<br\s*/?>', '\n', value, flags=re.IGNORECASE)
+    value = re.sub(r'[\r\n]?<br\s*/?>', '\n', value, flags=re.IGNORECASE)
+    value = value.replace('[/*]', '').replace('[*] ', '[*]')
     return value.replace('\r', '\n').strip()
 
 def read_text():
     key = os.environ.get('NEXUSMODS_API_KEY', '')
     require(bool(key), 'NEXUSMODS_API_KEY is missing')
-    url = 'https://api.nexusmods.com/v1/games/thecabingame/mods/2.json'
-    request = urllib.request.Request(url, headers={'apikey': key, 'accept': 'application/json'})
+    url = 'https://api.nexusmods.com/v1/games/thecabingame/mods/2.json?cache_bust=' + str(time.time_ns())
+    request = urllib.request.Request(url, headers={'apikey': key, 'accept': 'application/json', 'Cache-Control': 'no-cache'})
     try:
         with urllib.request.urlopen(request, timeout=45) as response:
             body = json.loads(response.read())
+            response_cache = {name: response.headers.get(name) for name in ('Date', 'Age', 'Cache-Control', 'X-Cache', 'CF-Cache-Status')}
         require(isinstance(body, dict) and str(body.get('mod_id')) == '2' and str(body.get('game_id')) == '10562', 'Nexus v1 text identity differs')
         if not isinstance(body.get('summary'), str) or not isinstance(body.get('description'), str):
             return {'text_available': False, 'cause': 'Nexus v1 reply omits the full summary/description', 'mod_id': body['mod_id'], 'game_id': body['game_id']}
         body['text_available'] = True
+        body['response_cache'] = response_cache
         return body
     except urllib.error.HTTPError as error:
         raise RuntimeError(f'error: Nexus text GET /v1/games/thecabingame/mods/2.json HTTP {error.code}; original cause={str(error.reason).replace(key, "[redacted]")}') from error
@@ -59,6 +63,7 @@ def main():
     receipt = {'identity': {'uid': uid, 'scoped': scoped}, 'attempted': False, 'confirmed': False,
                'parent_status_before': parent[0]['status'], 'description_sha256': hashlib.sha256(description.encode()).hexdigest()}
     receipt['readback_text'] = {name: before_text.get(name) for name in ('summary', 'description')}
+    receipt['response_cache'] = before_text.get('response_cache')
     try:
         if before_text.get('text_available') is False:
             require(parent[0]['status'] == 'not_published', 'Published Nexus page text is unavailable; cannot confirm it')
