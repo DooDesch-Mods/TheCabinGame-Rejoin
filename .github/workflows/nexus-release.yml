@@ -76,8 +76,8 @@ jobs:
           display_name: ${{ steps.target.outputs.display_name }}
           description: Rejoin is in an early development state. A complete test with four different Steam accounts has not yet been performed.
           category: main
-          allow_mod_manager_download: false
-          primary_mod_manager_download: false
+          allow_mod_manager_download: ${{ vars.NEXUS_VORTEX_READY == 'true' }}
+          primary_mod_manager_download: ${{ vars.NEXUS_VORTEX_READY == 'true' }}
           show_requirements_pop_up: true
           archive_existing_version: true
           update_mod_version: true

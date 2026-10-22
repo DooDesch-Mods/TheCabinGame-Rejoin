@@ -15,6 +15,7 @@ Use `resume_nexus=true` together with `publish_nexus=true` only when a retained 
 | `vars.NEXUS_MOD_ID` | Unique Mod ID `45363444580354` |
 | `vars.NEXUS_FILE_GROUP_ID` | Existing API File ID `8139033` |
 | `vars.NEXUS_GAME_SCOPED_ID` | Page ID `2`, used by both description-update workflows |
+| `vars.NEXUS_VORTEX_READY` | `true` enables the primary Mod Manager download on new releases |
 | `secrets.NEXUSMODS_API_KEY` | Existing organization secret; never print or commit its value |
 | `github.token` | Automatic workflow token with release-job `contents: write` permission |
 
@@ -32,6 +33,6 @@ Description readback uses the v1 full-text endpoint; the v3 game-scoped endpoint
 
 The acknowledged upload must be the exact new latest Main version with the configured file ID and declared version. Existing file-to-file dependency ranges are retained. Version 0.1.1 adds the separately published game-specific UE4SS Basic build as a requirement. The previously confirmed bundled 0.1.0 version is the only permitted empty-source migration; the receipt binds old and desired requirements separately. The helper resolves and verifies Nexus page 4, its file group and the exact loader build before publication and after upload. DLC dependencies block pending a supported mapping. A failed requirements PUT is recorded before the request and is not blindly repeated. The receipt leaves remote Nexus ZIP SHA confirmation unmeasured; API version acknowledgement is not a remote byte-hash claim.
 
-Vortex downloads stay disabled until an actual Nexus/Vortex deployment passes. The normal archive is installed manually in the same layout as the other Cabin mods. No Discord notification or Sentry integration is enabled. The workflow does not send messages or change gameplay.
+Published releases use `NEXUS_VORTEX_READY` to preserve the Mod Manager download option. Existing Nexus files need the same option enabled in their file settings; changing a workflow variable does not update them. The normal archive also supports manual installation in the same layout as the other Cabin mods. No Discord notification or Sentry integration is enabled. The workflow does not send messages or change gameplay.
 
 Local checks: `python -m unittest discover -s tests -v`. Workflow files and API effects are covered with YAML inspection, temporary fixtures and mocked HTTP/GitHub commands. Actual hosted CI and Nexus publication remain separate evidence.
