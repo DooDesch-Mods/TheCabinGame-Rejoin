@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.3 - 2026-10-23
+
+- Load installed FastTurns, LobbyPets and ShortEvents in the background host and apply the host settings before joining.
+- Restore the Neighbor card's three choices after its dialogue on the background host.
+- Fix a crash when leaving a round caused by an expired player controller.
+- A reported remote-host Reconnect blackscreen remains unresolved. A complete group round and recovery from a real AMD driver crash remain unmeasured.
+
 ## 0.1.2 - 2026-10-13
 
 - Use Rejoin and Mod Settings together without overlapping menu cards.

@@ -1,0 +1,26 @@
+{
+  "version": "0.1.3",
+  "publication_authorized": true,
+  "tested_candidate_sha256": "5fa1c1c68f54567b4225af15649c49d12a8ed57db173e53dc400b307bf7dbdf4",
+  "scope": [
+    "host-mod forwarding and host-settings acknowledgement",
+    "Neighbor original dialogue-to-choice continuation and selection",
+    "expired-controller cleanup on original round exit"
+  ],
+  "evidence": [
+    "Workspace/evidence/vortex-startup-crash-20261022/neighbor-fixed-control-crash",
+    "Workspace/evidence/vortex-startup-crash-20261022/neighbor-fixed-selection-readback",
+    "Workspace/evidence/vortex-startup-crash-20261022/control-lifecycle-accepted/receipt.json",
+    "Workspace/evidence/vortex-startup-crash-20261022/ui-exit-crash/regression.json"
+  ],
+  "delivery": {
+    "files_read_back": 10,
+    "hardlinks_preserved": true
+  },
+  "remaining": [
+    "reported remote-host Reconnect blackscreen",
+    "complete group round",
+    "candidate host-crash recovery"
+  ],
+  "unchanged": "Existing game containers and other runtime files retain their 0.1.2 baseline evidence."
+}

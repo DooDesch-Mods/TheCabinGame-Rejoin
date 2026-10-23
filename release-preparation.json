@@ -1,12 +1,15 @@
 {
   "status": "prepared",
-  "version": "0.1.2",
-  "sha256": "0c9e4dd0073cde84c3ea80c16292e9eee5304dd4e653e2138215b1f3cb981fb7",
+  "version": "0.1.3",
+  "sha256": "7ffeb131ce3d5cc6598fb0846692521812bf160eff53b6aad8672e0f5a1054b4",
   "publication_authorized": true,
   "early_development_state": true,
   "group_validation": "not_measured",
-  "manual_copy_targets_matched": 71,
-  "runtime_changes": 3,
-  "runtime_validation": "local_menu_compatibility",
-  "menu_compatibility_receipt_sha256": "b6c4981bc73ed6ff8c8f998b55b2508e6a344b64848e46a065a4c5f574abd302"
+  "manual_copy_targets_matched": 76,
+  "runtime_validation": [
+    "host-mod forwarding and host-settings acknowledgement",
+    "Neighbor original dialogue-to-choice continuation and selection",
+    "expired-controller cleanup on original round exit"
+  ],
+  "validation_receipt_sha256": "7290a82f6fcdb008ff953978e57baa6b2b9a0a84fe7b3ced427713fb8a9b1aa4"
 }

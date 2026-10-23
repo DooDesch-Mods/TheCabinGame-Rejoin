@@ -5,7 +5,7 @@ Adds a [b]Rejoin[/b] card to the main menu when a previous session is available.
 
 The round keeps running if the host's game crashes. The host's main menu opens again, and guests can restart through Steam. Reconnecting restores your cards, turn and room changes. You choose whether to return.
 
-[b]Early development state.[/b] Host crash and reconnect have been tested locally. A full four-player test and a real AMD driver-crash test are still pending. Bugs may occur.
+[b]Early development state.[/b] Host crash and reconnect have local evidence from earlier versions. Version 0.1.3 fixes background-host mod loading, missing Neighbor choices and a crash when leaving a round. A reported remote-host Reconnect blackscreen remains unresolved. A full four-player test and a real AMD driver-crash test are still pending. Bugs may occur.
 
 [size=5]Install[/size]
 [list=1]
@@ -18,7 +18,7 @@ Install the same Rejoin version on every player's PC. Both mod folders and both 
 
 Works with [b]Mod Settings[/b]: Rejoin stays on the far left, and Mods stays on the far right.
 
-Supported version: Windows, Steam build [b]25553694[/b]. Other mods besides Mod Settings that change the main menu or multiplayer may conflict.
+Supported version: Windows, Steam build [b]25553694[/b]. The background host now loads installed FastTurns, LobbyPets and ShortEvents with the host settings. FastTurns has local host/client evidence; full group compatibility remains unmeasured. Other mods that change the main menu or multiplayer may conflict.
 
 The round ends when the host selects [b]Quit Game[/b] or hosts a new session. If the host's PC shuts down, restarts or the background session crashes, the round is lost. Rejoin does not save rounds for later or prevent driver crashes.
 

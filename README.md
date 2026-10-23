@@ -6,7 +6,7 @@ Adds a **Rejoin** card to the main menu when a previous session is available. Fl
 
 The round keeps running if the host's game crashes. The host's main menu opens again, and guests can restart through Steam. Reconnecting restores your cards, turn and room changes. You choose whether to return.
 
-**Early development state.** Host crash and reconnect have been tested locally. A full four-player test and a real AMD driver-crash test are still pending. Bugs may occur.
+**Early development state.** Host crash and reconnect have local evidence from earlier versions. Version 0.1.3 has new local tests for host-mod forwarding, Neighbor choices and leaving a round. A full four-player test and a real AMD driver-crash test are still pending. Bugs may occur.
 
 Works with **Mod Settings**. Rejoin stays on the far left; the **Mods** card stays on the far right. Both cards keep their own actions.
 
@@ -40,7 +40,9 @@ The mod restores the retained player and round state. The camera and local viewi
 
 The background session lives on the host's PC. A PC shutdown or a crash of the background server loses the round. Full rounds are not saved to disk. The host's `Quit Game` also ends the round intentionally. Starting a new hosted session ends the host's old session.
 
-Other mods that replace the main-menu cards or change player/session handling may conflict. Compatibility with mods other than Mod Settings has not been tested.
+Other mods that replace the main-menu cards or change player/session handling may conflict. The background host now loads installed FastTurns, LobbyPets and ShortEvents with the host settings. FastTurns speed delivery has been checked with a local host and client; full group compatibility remains unmeasured.
+
+A reported blackscreen after Reconnect to another host remains unresolved. This update fixes a separately reproduced crash when leaving a round; it does not claim to fix that blackscreen.
 
 ## Uninstall
 
