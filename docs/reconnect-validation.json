@@ -1,0 +1,27 @@
+{
+  "version": "0.1.4",
+  "publication_authorized": true,
+  "tested_candidate_sha256": "d616472d442510f95bfdd44391c45309d0f4e8e93ff78d3441c502a94f12b779",
+  "scope": [
+    "initial roster readiness during reconnect",
+    "inspected-card restore after camera settling, original input and actual server ACK"
+  ],
+  "changed_runtime_files": {
+    "Mods/CabinRejoin/Scripts/extended_card_restore.lua": "e377e9ce012a4aca9d2c9bcdae21b6fd1ee805ffa282e2ff920ec32a0a21dff9",
+    "Mods/CabinRejoin/Scripts/phase_ledger.lua": "5d573c1a9675a9eeebb297ab4a85bc58a43dccf75508745b81650feffb3e99f8"
+  },
+  "evidence": [
+    "Workspace/evidence/vortex-startup-crash-20261022/reconnect-roster-accepted/receipt.json",
+    "Workspace/evidence/rejoin/two-clients/reconnect-lan-01/accepted-card-fix/receipt.json"
+  ],
+  "delivery": {
+    "files_read_back": 2,
+    "hardlinks_preserved": true
+  },
+  "remaining": [
+    "literal remote Steam blackscreen not reproduced",
+    "two-account Steam authentication not covered by local network fixture",
+    "full four-player round and real AMD driver crash"
+  ],
+  "unchanged": "All other runtime files, native DLL and containers are byte-identical to 0.1.3; previous acceptance evidence retained."
+}

@@ -1,15 +1,14 @@
 {
   "status": "prepared",
-  "version": "0.1.3",
-  "sha256": "7ffeb131ce3d5cc6598fb0846692521812bf160eff53b6aad8672e0f5a1054b4",
+  "version": "0.1.4",
+  "sha256": "0ab396f884ca04710d64f5d5409a542f04aeab380984cf73a7351f003adcab0f",
   "publication_authorized": true,
   "early_development_state": true,
   "group_validation": "not_measured",
   "manual_copy_targets_matched": 76,
   "runtime_validation": [
-    "host-mod forwarding and host-settings acknowledgement",
-    "Neighbor original dialogue-to-choice continuation and selection",
-    "expired-controller cleanup on original round exit"
+    "initial roster readiness during reconnect",
+    "inspected-card restore after camera settling, original input and actual server ACK"
   ],
-  "validation_receipt_sha256": "7290a82f6fcdb008ff953978e57baa6b2b9a0a84fe7b3ced427713fb8a9b1aa4"
+  "validation_receipt_sha256": "d5c843f1f7af27c9f558854e207f7b50779268b42466f9c4dc8d4488672ab552"
 }

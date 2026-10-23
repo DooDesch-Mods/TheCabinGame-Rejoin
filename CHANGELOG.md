@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4 - 2026-10-23
+
+- Wait for the initial player roster during reconnect instead of permanently invalidating the retained player state.
+- Fix disappearing inspected cards and incomplete reconnects caused by normal position updates while restoration is pending.
+- Wait for the owner camera to settle before positioning the inspected card, and validate the original game-only cursor mode.
+- Verified the card fix with two local graphical clients, a client restart, an actual host acknowledgement and the original card-accept action. The exact reported remote Steam blackscreen remains unconfirmed; the local network test does not cover two-account Steam authentication.
+
 ## 0.1.3 - 2026-10-23
 
 - Load installed FastTurns, LobbyPets and ShortEvents in the background host and apply the host settings before joining.
