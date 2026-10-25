@@ -99,3 +99,24 @@ jobs:
             dist/nexus-page.json
             dist/SHA256SUMS.txt
           if-no-files-found: warn
+      - name: Announce the release in Discord
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v${{ steps.target.outputs.version }}
+          SEND_ANNOUNCEMENT: 'true'
+          DISCORD_RELEASE_WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
+          DISCORD_CHANNEL_ID: '1534536549642014810'
+          PRODUCT_NAME: Rejoin
+          PRODUCT_SUMMARY: Reconnect to your previous round from the main menu.
+          PRODUCT_SUPPORT: https://support.doodesch.de/rejoin
+          NEXUS_MOD_URL: https://www.nexusmods.com/thecabingame/mods/2
+          PRODUCT_THUMBNAIL: https://raw.githubusercontent.com/DooDesch-Mods/TheCabinGame-Rejoin/main/docs/thumbnail.png
+        run: python tools/announce-release.py
+      - name: Keep Discord acknowledgement
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: discord-announcement-${{ github.run_id }}
+          path: discord-result.json
+          if-no-files-found: warn

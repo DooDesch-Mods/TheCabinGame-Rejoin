@@ -1,0 +1,47 @@
+name: Announce releases in Discord
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing published release tag (optional for a channel-only check)
+        type: string
+        required: false
+      announce:
+        description: Send the release announcement (check Discord before retry)
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: discord-release-${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Check announcement routing
+        run: python tests/test_discord.py
+      - name: Prepare or send release announcement
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          SEND_ANNOUNCEMENT: ${{ inputs.announce }}
+          DISCORD_RELEASE_WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
+          DISCORD_CHANNEL_ID: '1534536549642014810'
+          PRODUCT_NAME: Rejoin
+          PRODUCT_SUMMARY: Reconnect to your previous round from the main menu.
+          PRODUCT_SUPPORT: https://support.doodesch.de/rejoin
+          NEXUS_MOD_URL: https://www.nexusmods.com/thecabingame/mods/2
+          PRODUCT_THUMBNAIL: https://raw.githubusercontent.com/DooDesch-Mods/TheCabinGame-Rejoin/main/docs/thumbnail.png
+        run: python tools/announce-release.py
+      - name: Keep Discord acknowledgement
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: discord-announcement-${{ github.run_id }}
+          path: discord-result.json
+          if-no-files-found: warn
