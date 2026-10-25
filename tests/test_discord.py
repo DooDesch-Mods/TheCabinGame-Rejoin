@@ -175,6 +175,42 @@ class ProductAnnouncement(unittest.TestCase):
             self.assertEqual(request.call_count, 2)
             self.assertEqual(json.loads(Path("discord-result.json").read_text())["status"], "attempted")
 
+    def test_correct_existing_message_with_patch_and_readback(self):
+        message_id = "1563888164374843617"
+        embed = {"title": "Rejoin 0.1.4", "url": self.release["html_url"], "description": "### Fixed\n\n- A player-facing fix."}
+        payload = {"embeds": [embed], "allowed_mentions": {"parse": []}}
+        existing = {"id": message_id, "channel_id": discord.CHANNEL, "embeds": [dict(embed, description="old notes")]}
+        saved = dict(existing, embeds=[dict(embed, type="rich")])
+        responses = [{"channel_id": discord.CHANNEL, "guild_id": "789"}, existing, saved, saved]
+        with patch.object(discord, "request_json", side_effect=responses) as request:
+            result = discord.announce(self.environment["DISCORD_RELEASE_WEBHOOK"], discord.CHANNEL, payload, True, {}, message_id)
+            self.assertEqual(result["status"], "confirmed")
+            self.assertEqual(result["message_id"], message_id)
+            self.assertEqual(result["operation"], "edit")
+            self.assertEqual(request.call_args_list[2].kwargs, {"method": "PATCH"})
+            self.assertEqual(request.call_args_list[2].args[0], self.environment["DISCORD_RELEASE_WEBHOOK"] + "/messages/" + message_id)
+            self.assertEqual(request.call_count, 4)
+
+    def test_correction_cannot_replace_another_release(self):
+        message_id = "1563888164374843617"
+        payload = {"embeds": [{"title": "Rejoin 0.1.4", "url": self.release["html_url"]}]}
+        existing = {"id": message_id, "channel_id": discord.CHANNEL, "embeds": [{"title": "Rejoin 0.1.3", "url": "wrong"}]}
+        with patch.object(discord, "request_json", side_effect=[{"channel_id": discord.CHANNEL}, existing]) as request:
+            with self.assertRaisesRegex(ValueError, "does not match this product and release"):
+                discord.announce(self.environment["DISCORD_RELEASE_WEBHOOK"], discord.CHANNEL, payload, True, {}, message_id)
+            self.assertEqual(request.call_count, 2)
+            self.assertFalse(Path("discord-result.json").exists())
+
+    def test_readback_mismatch_is_not_confirmed(self):
+        import json
+        message_id = "1563888164374843617"
+        payload = {"embeds": [{"title": "Rejoin 0.1.4", "url": self.release["html_url"], "description": "new notes"}]}
+        existing = {"id": message_id, "channel_id": discord.CHANNEL, "embeds": [dict(payload["embeds"][0], description="old notes")]}
+        with patch.object(discord, "request_json", side_effect=[{"channel_id": discord.CHANNEL}, existing, existing, existing]):
+            with self.assertRaisesRegex(ValueError, "differs from the requested content"):
+                discord.announce(self.environment["DISCORD_RELEASE_WEBHOOK"], discord.CHANNEL, payload, True, {}, message_id)
+            self.assertEqual(json.loads(Path("discord-result.json").read_text())["status"], "acknowledged")
+
 
 if __name__ == "__main__":
     unittest.main()

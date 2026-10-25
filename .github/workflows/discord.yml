@@ -10,6 +10,10 @@ on:
         description: Send the release announcement (check Discord before retry)
         type: boolean
         default: false
+      message_id:
+        description: Existing announcement to correct instead of posting a new message
+        type: string
+        required: false
 permissions:
   contents: read
 concurrency:
@@ -30,6 +34,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.tag }}
           SEND_ANNOUNCEMENT: ${{ inputs.announce }}
+          DISCORD_MESSAGE_ID: ${{ inputs.message_id }}
           DISCORD_RELEASE_WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
           DISCORD_CHANNEL_ID: '1534536549642014810'
           PRODUCT_NAME: Rejoin

@@ -2,10 +2,15 @@
 
 ## 0.1.4 - 2026-10-23
 
-- Wait for the initial player roster during reconnect instead of permanently invalidating the retained player state.
-- Fix disappearing inspected cards and incomplete reconnects caused by normal position updates while restoration is pending.
-- Wait for the owner camera to settle before positioning the inspected card, and validate the original game-only cursor mode.
-- Verified the card fix with two local graphical clients, a client restart, an actual host acknowledgement and the original card-accept action. The exact reported remote Steam blackscreen remains unconfirmed; the local network test does not cover two-account Steam authentication.
+### Fixed
+
+- Improve reconnect reliability while the round is still loading.
+- Fix inspected cards disappearing after reconnecting.
+- Fix card placement after reconnecting.
+
+### Known issues
+
+- The reported black screen when reconnecting to a remote Steam host is not confirmed fixed.
 
 ## 0.1.3 - 2026-10-23
 

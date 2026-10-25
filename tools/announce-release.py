@@ -13,9 +13,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-def request_json(url, label, headers=None, payload=None):
+def request_json(url, label, headers=None, payload=None, method=None):
     data = None if payload is None else json.dumps(payload).encode("utf-8")
-    request = urllib.request.Request(url, headers=headers or {}, data=data)
+    request = urllib.request.Request(url, headers=headers or {}, data=data, method=method)
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
             return json.load(response)
@@ -48,7 +48,18 @@ def build_payload(release, name, description, support, thumbnail, nexus, reposit
         "footer": {"text": "The Cabin Game · " + short},
     }]}
 
-def announce(webhook, expected_channel, payload, send, record):
+def contains_payload(actual, expected):
+    """Discord adds metadata to saved embeds; compare every authored field."""
+    if isinstance(expected, dict):
+        return isinstance(actual, dict) and all(key in actual and contains_payload(actual[key], value) for key, value in expected.items())
+    if isinstance(expected, list):
+        return isinstance(actual, list) and len(actual) == len(expected) and all(contains_payload(left, right) for left, right in zip(actual, expected))
+    return actual == expected
+
+
+def announce(webhook, expected_channel, payload, send, record, message_id=None):
+    if message_id and (not send or not re.fullmatch(r"[0-9]{17,20}", message_id)):
+        raise ValueError("correcting a message requires send enabled and a valid Discord message ID")
     parsed = urllib.parse.urlparse(webhook)
     if parsed.scheme != "https" or parsed.hostname not in {"discord.com", "discordapp.com"} or not re.fullmatch(r"/api(?:/v[0-9]+)?/webhooks/[0-9]+/[A-Za-z0-9._-]+(?:/github)?", parsed.path):
         raise ValueError("invalid Discord webhook address")
@@ -57,6 +68,15 @@ def announce(webhook, expected_channel, payload, send, record):
     target = request_json(webhook, "read Discord destination", headers)
     if target.get("channel_id") != expected_channel:
         raise ValueError(f"Discord destination mismatch: measured {target.get('channel_id')}, required {expected_channel}")
+    message_url = webhook + "/messages/" + message_id if message_id else None
+    if message_id:
+        existing = request_json(message_url, "read announcement to correct", headers)
+        expected = payload["embeds"][0]
+        embeds = existing.get("embeds", [])
+        if (existing.get("id") != message_id or existing.get("channel_id") != expected_channel
+                or len(embeds) != 1 or any(embeds[0].get(key) != expected[key] for key in ("title", "url"))):
+            raise ValueError("existing announcement does not match this product and release; correction not sent")
+        record.update(operation="edit", message_id=message_id)
     record.update(channel_id=expected_channel, status="checked", payload=payload)
     Path("discord-result.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
     if not send:
@@ -64,8 +84,13 @@ def announce(webhook, expected_channel, payload, send, record):
         return record
     record["status"] = "attempted"
     Path("discord-result.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
-    print(f"info: sending release announcement to Discord channel {expected_channel}")
-    message = request_json(webhook + "?wait=true", "send Discord announcement", headers, payload)
+    print(f"info: {'correcting' if message_id else 'sending'} release announcement in Discord channel {expected_channel}")
+    if message_id:
+        message = request_json(message_url, "correct Discord announcement", headers, payload, method="PATCH")
+        if message.get("id") != message_id:
+            raise ValueError("Discord correction acknowledgement differs from the requested message")
+    else:
+        message = request_json(webhook + "?wait=true", "send Discord announcement", headers, payload)
     message_id = message.get("id", "")
     if not message_id or message.get("channel_id") != expected_channel:
         raise ValueError("Discord returned no matching message acknowledgement; inspect the channel before retry")
@@ -75,6 +100,8 @@ def announce(webhook, expected_channel, payload, send, record):
     saved = request_json(webhook + "/messages/" + message_id, "read saved Discord announcement", headers)
     if saved.get("id") != message_id or saved.get("channel_id") != expected_channel:
         raise ValueError("saved Discord message does not match its acknowledgement")
+    if "embeds" in payload and not contains_payload(saved.get("embeds"), payload["embeds"]):
+        raise ValueError("saved Discord announcement differs from the requested content")
     record.update(status="confirmed", message_url=f"https://discord.com/channels/{target['guild_id']}/{expected_channel}/{message_id}")
     Path("discord-result.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
     print(f"confirmed: Discord message {message_id} is saved in channel {expected_channel}")
@@ -134,6 +161,9 @@ def check_prior_attempt():
 def run():
     tag = os.environ.get("RELEASE_TAG", "")
     send = os.environ.get("SEND_ANNOUNCEMENT") == "true"
+    message_id = os.environ.get("DISCORD_MESSAGE_ID", "")
+    if message_id and not send:
+        raise ValueError("correcting an announcement requires announce=true")
     if send and not tag:
         raise ValueError("sending requires a published release tag")
     check_product()
@@ -157,7 +187,7 @@ def run():
     webhook = os.environ.get("DISCORD_RELEASE_WEBHOOK", "")
     if not webhook:
         raise ValueError("DISCORD_RELEASE_WEBHOOK is missing; release announcement cannot run")
-    result = announce(webhook, os.environ["DISCORD_CHANNEL_ID"], payload, send, record)
+    result = announce(webhook, os.environ["DISCORD_CHANNEL_ID"], payload, send, record, message_id=message_id or None)
     with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
         summary.write(f"Discord: {result['status']}. Channel: {result['channel_id']}.\n\n" + result.get("message_url", "No message sent.") + "\n")
 
