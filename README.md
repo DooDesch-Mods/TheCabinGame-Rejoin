@@ -6,20 +6,22 @@ Adds a **Rejoin** card to the main menu when a previous session is available. Fl
 
 The round keeps running if the host's game crashes. The host's main menu opens again, and guests can restart through Steam. Reconnecting restores your cards, turn and room changes. You choose whether to return.
 
-**Early development state.** Host crash and reconnect have local evidence from earlier versions. Version 0.1.4 fixes two reproduced incomplete reconnects: waiting for the initial player roster and restoring an inspected card. Local tests cover a host and graphical client, including a client restart and card input after reconnect. A full four-player test and a real AMD driver-crash test are still pending. Bugs may occur.
+**Early development state.** Version 0.1.5 updates Rejoin for the Halloween build, restores changed rooms and furniture, and avoids marking Alt+F4 as an intentional Quit Game. Two local graphical clients completed a reconnect during an event with the original seated state and matching room walls. Native Alt+F4 intent checks passed, but actual Steam host recovery and the reported remote Steam blackscreen remain unconfirmed. A full four-player test and a real AMD driver-crash test are still pending. Bugs may occur.
 
 Works with **Mod Settings**. Rejoin stays on the far left; the **Mods** card stays on the far right. Both cards keep their own actions.
 
-## Changes in 0.1.4
+## Changes in 0.1.5
 
-- Wait for the original player roster instead of permanently blocking restoration when reconnecting before the first turn is ready.
-- Restore an inspected card after the owner camera settles. Normal position updates no longer abort restoration, and the input check matches the original game-only cursor mode.
-- Host and guests should update to 0.1.4 with the game closed. The tested fixes do not establish a fix for every reported Steam blackscreen.
+- Keep Alt+F4 separate from the host's explicit Quit Game action.
+- Restore placed rooms, their changed walls and furniture, and the retained seated state after reconnecting.
+- Retry an initial snapshot that could not be captured yet.
+- Use the current Halloween GameMode instead of replacing it with the older version.
+- Host and guests must update together with the game closed. This update uses a new restoration format.
 
 ## Requirements
 
 - Windows and the Steam version of the cabin game.
-- Supported Steam build: **25553694**.
+- Supported Steam build: **26187517**.
 - Everyone in the group should install the same Rejoin version.
 - [UE4SS for the cabin game](https://www.nexusmods.com/thecabingame/mods/4), installed separately. Supported baseline: `v3.0.1-1164-g5e627997`.
 
@@ -48,7 +50,7 @@ The background session lives on the host's PC. A PC shutdown or a crash of the b
 
 Other mods that replace the main-menu cards or change player/session handling may conflict. The background host now loads installed FastTurns, LobbyPets and ShortEvents with the host settings. FastTurns speed delivery has been checked with a local host and client; full group compatibility remains unmeasured.
 
-The exact reported blackscreen after Reconnect to another Steam host has not been reproduced. Version 0.1.4 fixes two separately reproduced restoration failures. The two-client card test used a local network fixture and does not validate authentication between two Steam accounts.
+The exact reported blackscreen after Reconnect to another Steam host has not been reproduced. Version 0.1.5 includes the measured local restoration fixes. Actual Steam host recovery after Alt+F4 is also unconfirmed. The two-client card test used a local network fixture and does not validate authentication between two Steam accounts.
 
 ## Uninstall
 

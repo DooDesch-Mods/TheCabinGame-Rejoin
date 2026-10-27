@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.5 - 2026-10-27
+
+### Fixed
+
+- Avoid treating Alt+F4 as choosing Quit Game.
+- Restore changed room walls and furniture and keep seated players in their seats after reconnecting.
+- Retry restoration when the first room or card snapshot is not ready.
+- Preserve the Halloween update when loading Rejoin.
+
+### Known issues
+
+- The reported remote Steam reconnect black screen and actual Steam host recovery after Alt+F4 remain unconfirmed.
+
 ## 0.1.4 - 2026-10-23
 
 ### Fixed

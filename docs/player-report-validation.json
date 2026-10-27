@@ -1,0 +1,23 @@
+{
+  "version": "0.1.5",
+  "game_build": "26187517",
+  "scope": "Two local graphical LAN clients, original Cellar placement, controlled original event and seated guest reconnect with actual host acknowledgement and changed walls/furniture readback.",
+  "checks": {
+    "local_event_rejoin": true,
+    "room_wall_readback": true,
+    "placed_room_furniture_readback": true,
+    "native_unload_intent_fixture": true,
+    "native_existing_quit_create_fixtures": true,
+    "current_gamemode_semantic_diff": true
+  },
+  "not_measured": [
+    "two-account Steam reconnect",
+    "actual Steam host Alt+F4 recovery",
+    "natural reported event-stall cause",
+    "full four-player round",
+    "real AMD driver crash"
+  ],
+  "lua_snapshot_version": 12,
+  "native_sha256": "9984dc77ceada5e2661a412256571b8c38c810d7716c8f32397b673a7d7f0c5a",
+  "evidence_sha256": "bd31154dd7ca2630e018100619a443a8752021f3996d252f7a9cae940d9f9e38"
+}

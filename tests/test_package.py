@@ -33,7 +33,7 @@ class ManualPackageTests(unittest.TestCase):
         manifest = package.validate(ROOT / package.CONFIG['archive'])
         self.assertEqual(manifest['installation'], 'manual')
         self.assertFalse(manifest['bundled_runtime'])
-        self.assertEqual(len(manifest['install_files']), 76)
+        self.assertEqual(len(manifest['install_files']), 77)
 
     def test_installer_leftover_cannot_be_declared_as_an_archive_member(self):
         def change(files, manifest):

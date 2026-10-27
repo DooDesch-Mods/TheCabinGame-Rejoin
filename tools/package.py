@@ -9,8 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 CONFIG = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
 REQUIRED_OVERLAYS = {
     'the_cabin_game/Content/Paks/CabinRejoinBootstrap_P.pak': '75e7144577253917f6da7312ef5e585b12fb728226a22b0938323751a6b555cd',
-    'the_cabin_game/Content/Paks/CabinRejoinBootstrap_P.ucas': 'ef8227b2bd2d086f822b3bce4ff335dffd6f19263e5bdc7525dc28462c3b1622',
-    'the_cabin_game/Content/Paks/CabinRejoinBootstrap_P.utoc': '53959f1e6395c0a04dedcf46cbf5fb2bf9c734e1cda2fa955659532a07b43b09',
+    'the_cabin_game/Content/Paks/CabinRejoinBootstrap_P.ucas': 'cc28126ffd3b56f8248d9874b3931a8c014c4621896d2abdba38c95502449f98',
+    'the_cabin_game/Content/Paks/CabinRejoinBootstrap_P.utoc': 'c817777983eb356adcada4351d16abd833deb3b72dfdab18ca94253e5e9af2c7',
     'the_cabin_game/Content/Paks/Mods/CabinRejoinMenu/CabinRejoinMenuV4_P.pak': '75e7144577253917f6da7312ef5e585b12fb728226a22b0938323751a6b555cd',
     'the_cabin_game/Content/Paks/Mods/CabinRejoinMenu/CabinRejoinMenuV4_P.ucas': '196a8a7254716a693b08429f00ff2517b0a221f446e8a7a0529149c506196439',
     'the_cabin_game/Content/Paks/Mods/CabinRejoinMenu/CabinRejoinMenuV4_P.utoc': '2a0dfbbf631ac53aebd150f27b35e2762376830659cf66e232b5f6141fe448df',
