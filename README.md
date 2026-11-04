@@ -2,6 +2,8 @@
 
 > 🛟 **Need help or found a bug?** Get support at [support.doodesch.de/rejoin](https://support.doodesch.de/rejoin).
 
+[![Discord](https://mods.doodesch.de/img/badge.svg)](https://mods.doodesch.de)
+
 Adds a **Rejoin** card to the main menu when a previous session is available. Flip it and select **Reconnect** to return to your round.
 
 The round keeps running if the host's game crashes. The host's main menu opens again, and guests can restart through Steam. Reconnecting restores your cards, turn and room changes. You choose whether to return.
@@ -66,6 +68,12 @@ If you installed UE4SS only for Rejoin and use no other UE4SS mods, you can also
 If Rejoin does not load, check that UE4SS is installed and that both mod folders and all six container files are in their matching game folders.
 
 For an in-game problem, include your Rejoin version, whether you hosted or joined, the action that failed and the visible result. Relevant logs are `the_cabin_game/Binaries/Win64/ue4ss/UE4SS.log` and `ue4ss/CabinRejoinAuthority/UE4SS.log`. Check logs before sharing them because they can contain local paths and Steam identifiers.
+
+## Community
+
+[![DooDesch Mods on Discord](https://mods.doodesch.de/img/card.svg)](https://mods.doodesch.de)
+
+Join the DooDesch Mods Discord: update pings, polls on what comes next, and playtests of new mods.
 
 ## Credits and license
 
